@@ -11,7 +11,7 @@ import SwiftUI
 struct eGymApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ExerciseInterestsView()
         }
     }
 }
