@@ -98,37 +98,3 @@ final class AuthViewModel: NSObject, ObservableObject {
     return base
   }
 }
-
-// MARK: - Email/Password login
-func signIn(email: String, password: String) {
-  Task { @MainActor in
-    do {
-      let result = try await Auth.auth().signIn(withEmail: email, password: password)
-      self.user = result.user
-      self.status = "Signed in as \(result.user.email ?? "user")"
-    } catch {
-      self.status = "Login failed: \(error.localizedDescription)"
-    }
-  }
-}
-
-func sendPasswordReset(to email: String) {
-  Task { @MainActor in
-    do {
-      try await Auth.auth().sendPasswordReset(withEmail: email)
-      self.status = "Password reset email sent."
-    } catch {
-      self.status = "Reset failed: \(error.localizedDescription)"
-    }
-  }
-}
-
-func signOut() {
-  do {
-    try Auth.auth().signOut()
-    self.user = nil
-    self.status = "Signed out."
-  } catch {
-    self.status = "Sign out failed: \(error.localizedDescription)"
-  }
-}
