@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseCore
 
 @main
 struct eGymApp: App {
@@ -8,8 +9,10 @@ struct eGymApp: App {
   var body: some Scene {
     WindowGroup {
       RootView()
-        .environmentObject(auth)   // keep this
-        .onOpenURL { url in auth.handleOpenURL(url) }
+        .environmentObject(auth)
+        .onOpenURL { url in
+          auth.handleOpenURL(url)   // for Google + email-link flows
+        }
     }
   }
 }

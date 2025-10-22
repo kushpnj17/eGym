@@ -5,10 +5,9 @@ struct RootView: View {
 
   var body: some View {
     if auth.user == nil {
-      // 👉 Pass the VM in directly
-      LoginView(auth: auth)
+      LoginView()
     } else {
-      ExerciseInterestsView()
+      ExerciseInterestsView()  // your existing screen
     }
   }
 }

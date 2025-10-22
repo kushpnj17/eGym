@@ -1,9 +1,7 @@
 import SwiftUI
 
 struct LoginView: View {
-  // 👉 Use ObservedObject, not EnvironmentObject
-  @ObservedObject var auth: AuthViewModel
-
+  @EnvironmentObject var auth: AuthViewModel
   @State private var email: String = ""
   @State private var password: String = ""
   @State private var showPwd = false
@@ -55,7 +53,7 @@ struct LoginView: View {
         .buttonStyle(.bordered)
       }
 
-      // Apple
+      // Apple (use a plain button to trigger the VM; avoids funky generic init)
       Button {
         auth.startSignInWithApple()
       } label: {
