@@ -1,24 +1,17 @@
 import SwiftUI
-import AuthenticationServices
 
 struct LoginView: View {
   @EnvironmentObject var auth: AuthViewModel
+  @State private var email: String = ""
+  @State private var password: String = ""
   @State private var showPwd = false
-
-  // Explicit bindings so Swift never tries dynamicMember on EnvironmentObject
-  private var emailBinding: Binding<String> {
-    Binding(get: { auth.email }, set: { auth.email = $0 })
-  }
-  private var passwordBinding: Binding<String> {
-    Binding(get: { auth.password }, set: { auth.password = $0 })
-  }
 
   var body: some View {
     VStack(spacing: 18) {
       Text("Welcome to eGym").font(.title).bold()
 
       // Email
-      TextField("Email", text: emailBinding)
+      TextField("Email", text: $email)
         .textContentType(.emailAddress)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
@@ -29,35 +22,52 @@ struct LoginView: View {
       // Password
       HStack {
         if showPwd {
-          TextField("Password", text: passwordBinding)
+          TextField("Password", text: $password)
         } else {
-          SecureField("Password", text: passwordBinding)
+          SecureField("Password", text: $password)
         }
         Button(showPwd ? "Hide" : "Show") { showPwd.toggle() }
       }
+      .textContentType(.password)
       .padding().background(.thinMaterial)
       .clipShape(RoundedRectangle(cornerRadius: 12))
 
       // Email/Password actions
       HStack {
-        Button("Sign In") { Task { await auth.signInWithEmail() } }
-          .buttonStyle(.borderedProminent)
+        Button("Sign In") {
+          Task {
+            auth.email = email
+            auth.password = password
+            await auth.signInWithEmail()
+          }
+        }
+        .buttonStyle(.borderedProminent)
 
-        Button("Sign Up") { Task { await auth.signUpWithEmail() } }
-          .buttonStyle(.bordered)
+        Button("Sign Up") {
+          Task {
+            auth.email = email
+            auth.password = password
+            await auth.signUpWithEmail()
+          }
+        }
+        .buttonStyle(.bordered)
       }
 
-      // Apple
-      SignInWithAppleButton(.signIn) { _ in
-        auth.startSignInWithApple()   // NOTE: no "$auth" here
-      } onCompletion: { _ in }
-      .signInWithAppleButtonStyle(.black)
-      .frame(height: 44)
-      .clipShape(RoundedRectangle(cornerRadius: 10))
+      // Apple (use a plain button to trigger the VM; avoids funky generic init)
+      Button {
+        auth.startSignInWithApple()
+      } label: {
+        Label("Continue with Apple", systemImage: "apple.logo")
+          .frame(maxWidth: .infinity, minHeight: 44)
+      }
+      .buttonStyle(.bordered)
 
       // Google
-      Button("Continue with Google") {
-        auth.signInWithGoogle()       // NOTE: no "$auth" here
+      Button {
+        auth.signInWithGoogle()
+      } label: {
+        Label("Continue with Google", systemImage: "globe")
+          .frame(maxWidth: .infinity, minHeight: 44)
       }
       .buttonStyle(.bordered)
 
