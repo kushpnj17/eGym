@@ -6,6 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5C544DA62EA8D108005892B2 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DA52EA8D108005892B2 /* GoogleSignIn */; };
+		5C544DA82EA8D108005892B2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DA72EA8D108005892B2 /* GoogleSignInSwift */; };
+		5C544DC12EA8D316005892B2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DC02EA8D316005892B2 /* FirebaseAuth */; };
+		5C544DC32EA8D31A005892B2 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DC22EA8D31A005892B2 /* FirebaseCore */; };
+		5C544DCF2EA8D50E005892B2 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DCE2EA8D50E005892B2 /* AppAuth */; };
+		5C544DD12EA8D50E005892B2 /* AppAuthCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD02EA8D50E005892B2 /* AppAuthCore */; };
+		5C544DD32EA8D50E005892B2 /* AppAuthTV in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD22EA8D50E005892B2 /* AppAuthTV */; };
+		5C544DD62EA8D52E005892B2 /* GULAppDelegateSwizzler in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD52EA8D52E005892B2 /* GULAppDelegateSwizzler */; };
+		5C544DD82EA8D52E005892B2 /* GULEnvironment in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD72EA8D52E005892B2 /* GULEnvironment */; };
+		5C544DDA2EA8D52E005892B2 /* GULLogger in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD92EA8D52E005892B2 /* GULLogger */; };
+		5C544DDC2EA8D52E005892B2 /* GULMethodSwizzler in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DDB2EA8D52E005892B2 /* GULMethodSwizzler */; };
+		5C544DDE2EA8D52E005892B2 /* GULNSData in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DDD2EA8D52E005892B2 /* GULNSData */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		5CA3A1AB2EA8A5CE00D8763F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +67,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C544DCF2EA8D50E005892B2 /* AppAuth in Frameworks */,
+				5C544DA62EA8D108005892B2 /* GoogleSignIn in Frameworks */,
+				5C544DC12EA8D316005892B2 /* FirebaseAuth in Frameworks */,
+				5C544DD62EA8D52E005892B2 /* GULAppDelegateSwizzler in Frameworks */,
+				5C544DD32EA8D50E005892B2 /* AppAuthTV in Frameworks */,
+				5C544DC32EA8D31A005892B2 /* FirebaseCore in Frameworks */,
+				5C544DDA2EA8D52E005892B2 /* GULLogger in Frameworks */,
+				5C544DDC2EA8D52E005892B2 /* GULMethodSwizzler in Frameworks */,
+				5C544DD82EA8D52E005892B2 /* GULEnvironment in Frameworks */,
+				5C544DDE2EA8D52E005892B2 /* GULNSData in Frameworks */,
+				5C544DA82EA8D108005892B2 /* GoogleSignInSwift in Frameworks */,
+				5C544DD12EA8D50E005892B2 /* AppAuthCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +99,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5C544DBF2EA8D316005892B2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		5CA3A1942EA8A5C600D8763F = {
 			isa = PBXGroup;
 			children = (
 				5CA3A19F2EA8A5C600D8763F /* eGym */,
 				5CA3A1AD2EA8A5CE00D8763F /* eGymTests */,
 				5CA3A1B72EA8A5CE00D8763F /* eGymUITests */,
+				5C544DBF2EA8D316005892B2 /* Frameworks */,
 				5CA3A19E2EA8A5C600D8763F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +147,18 @@
 			);
 			name = eGym;
 			packageProductDependencies = (
+				5C544DA52EA8D108005892B2 /* GoogleSignIn */,
+				5C544DA72EA8D108005892B2 /* GoogleSignInSwift */,
+				5C544DC02EA8D316005892B2 /* FirebaseAuth */,
+				5C544DC22EA8D31A005892B2 /* FirebaseCore */,
+				5C544DCE2EA8D50E005892B2 /* AppAuth */,
+				5C544DD02EA8D50E005892B2 /* AppAuthCore */,
+				5C544DD22EA8D50E005892B2 /* AppAuthTV */,
+				5C544DD52EA8D52E005892B2 /* GULAppDelegateSwizzler */,
+				5C544DD72EA8D52E005892B2 /* GULEnvironment */,
+				5C544DD92EA8D52E005892B2 /* GULLogger */,
+				5C544DDB2EA8D52E005892B2 /* GULMethodSwizzler */,
+				5C544DDD2EA8D52E005892B2 /* GULNSData */,
 			);
 			productName = eGym;
 			productReference = 5CA3A19D2EA8A5C600D8763F /* eGym.app */;
@@ -197,6 +244,9 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5CA3A1CD2EA8CB1200D8763F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				5C544DA42EA8D108005892B2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				5C544DCD2EA8D50E005892B2 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
+				5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5CA3A19E2EA8A5C600D8763F /* Products */;
@@ -324,7 +374,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -381,7 +431,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -555,15 +605,102 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5C544DA42EA8D108005892B2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 15.0.0;
+			};
+		};
+		5C544DCD2EA8D50E005892B2 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openid/AppAuth-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 15.0.0;
+			};
+		};
+		5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleUtilities";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 15.0.0;
+			};
+		};
 		5CA3A1CD2EA8CB1200D8763F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.4.0;
+				minimumVersion = 15.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5C544DA52EA8D108005892B2 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DA42EA8D108005892B2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		5C544DA72EA8D108005892B2 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DA42EA8D108005892B2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		5C544DC02EA8D316005892B2 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CA3A1CD2EA8CB1200D8763F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		5C544DC22EA8D31A005892B2 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CA3A1CD2EA8CB1200D8763F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		5C544DCE2EA8D50E005892B2 /* AppAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DCD2EA8D50E005892B2 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuth;
+		};
+		5C544DD02EA8D50E005892B2 /* AppAuthCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DCD2EA8D50E005892B2 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuthCore;
+		};
+		5C544DD22EA8D50E005892B2 /* AppAuthTV */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DCD2EA8D50E005892B2 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuthTV;
+		};
+		5C544DD52EA8D52E005892B2 /* GULAppDelegateSwizzler */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
+			productName = GULAppDelegateSwizzler;
+		};
+		5C544DD72EA8D52E005892B2 /* GULEnvironment */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
+			productName = GULEnvironment;
+		};
+		5C544DD92EA8D52E005892B2 /* GULLogger */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
+			productName = GULLogger;
+		};
+		5C544DDB2EA8D52E005892B2 /* GULMethodSwizzler */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
+			productName = GULMethodSwizzler;
+		};
+		5C544DDD2EA8D52E005892B2 /* GULNSData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
+			productName = GULNSData;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5CA3A1952EA8A5C600D8763F /* Project object */;
 }

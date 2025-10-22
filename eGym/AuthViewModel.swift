@@ -9,7 +9,7 @@ import GoogleSignIn
 import UIKit
 
 @MainActor
-final class AuthViewModel: ObservableObject {
+final class AuthViewModel: NSObject, ObservableObject {
   @Published var user: User?
   @Published var email: String = ""
   @Published var password: String = ""
@@ -18,7 +18,8 @@ final class AuthViewModel: ObservableObject {
   // For Apple nonce
   private var currentNonce: String?
 
-  init() {
+  override init() {
+      super.init()
     self.user = Auth.auth().currentUser
     Auth.auth().addStateDidChangeListener { [weak self] _, user in
       self?.user = user
@@ -148,9 +149,9 @@ extension AuthViewModel: ASAuthorizationControllerDelegate, ASAuthorizationContr
       status = "Apple: missing credentials"
       return
     }
-    let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                              idToken: idTokenString,
-                                              rawNonce: nonce)
+    let credential = OAuthProvider.appleCredential(withIDToken: idTokenString,
+                                              rawNonce: nonce,
+                                              fullName: nil)
     Task {
       do {
         let result = try await Auth.auth().signIn(with: credential)
