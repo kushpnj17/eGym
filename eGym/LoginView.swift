@@ -1,41 +1,37 @@
 import SwiftUI
-import AuthenticationServices   // for the Apple button
+import AuthenticationServices
 
 struct LoginView: View {
   @EnvironmentObject var auth: AuthViewModel
   @State private var showPwd = false
+
+  // Explicit bindings so Swift never tries dynamicMember on EnvironmentObject
+  private var emailBinding: Binding<String> {
+    Binding(get: { auth.email }, set: { auth.email = $0 })
+  }
+  private var passwordBinding: Binding<String> {
+    Binding(get: { auth.password }, set: { auth.password = $0 })
+  }
 
   var body: some View {
     VStack(spacing: 18) {
       Text("Welcome to eGym").font(.title).bold()
 
       // Email
-      TextField(
-        "Email",
-        text: Binding(
-          get: { auth.email },
-          set: { auth.email = $0 }
-        )
-      )
-      .textContentType(.emailAddress)
-      .keyboardType(.emailAddress)
-      .textInputAutocapitalization(.never)
-      .autocorrectionDisabled()
-      .padding().background(.thinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
+      TextField("Email", text: emailBinding)
+        .textContentType(.emailAddress)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
+        .autocorrectionDisabled()
+        .padding().background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
 
       // Password
       HStack {
         if showPwd {
-          TextField(
-            "Password",
-            text: Binding(get: { auth.password }, set: { auth.password = $0 })
-          )
+          TextField("Password", text: passwordBinding)
         } else {
-          SecureField(
-            "Password",
-            text: Binding(get: { auth.password }, set: { auth.password = $0 })
-          )
+          SecureField("Password", text: passwordBinding)
         }
         Button(showPwd ? "Hide" : "Show") { showPwd.toggle() }
       }
@@ -53,7 +49,7 @@ struct LoginView: View {
 
       // Apple
       SignInWithAppleButton(.signIn) { _ in
-        auth.startSignInWithApple()
+        auth.startSignInWithApple()   // NOTE: no "$auth" here
       } onCompletion: { _ in }
       .signInWithAppleButtonStyle(.black)
       .frame(height: 44)
@@ -61,7 +57,7 @@ struct LoginView: View {
 
       // Google
       Button("Continue with Google") {
-        auth.signInWithGoogle()
+        auth.signInWithGoogle()       // NOTE: no "$auth" here
       }
       .buttonStyle(.bordered)
 
