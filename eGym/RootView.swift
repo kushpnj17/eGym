@@ -1,3 +1,4 @@
+// RootView.swift
 import SwiftUI
 
 struct RootView: View {
@@ -10,7 +11,10 @@ struct RootView: View {
     } else {
       NavigationStack {
         if showOnboarding {
-          ExerciseInterestsView()
+          ExerciseInterestsView(onFinished: {      // <-- no `auth:` here
+            showOnboarding = false                 // go to Home after save/skip
+          })
+          .navigationBarBackButtonHidden(true)
         } else {
           HomeView()
         }

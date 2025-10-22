@@ -14,7 +14,10 @@ struct ExerciseInterest: Identifiable, Hashable {
 
 struct ExerciseInterestsView: View {
     @EnvironmentObject var auth: AuthViewModel
-    let onFinished: () -> Void = {}
+    let onFinished: () -> Void
+    init(onFinished: @escaping () -> Void = {}) {
+        self.onFinished = onFinished
+    }
 
     @State private var interests: [ExerciseInterest] = [
         .init(title: "Running",       systemImage: "figure.run"),
@@ -35,6 +38,11 @@ struct ExerciseInterestsView: View {
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
     ]
+    
+    // Call this from the Next button
+    private func onNextTapped(selected: [String]) {
+        Task { await saveSelections(selected) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -91,9 +99,12 @@ struct ExerciseInterestsView: View {
     }
 
     // MARK: - Firestore write
-
+    @MainActor
     private func saveSelections(_ selected: [String]) async {
-        guard let uid = auth.user?.uid else { onFinished(); return }
+        guard let uid = auth.user?.uid else {
+            await MainActor.run { onFinished() }
+            return
+        }
         let db = Firestore.firestore()
 
         let payload: [String: Any] = [
@@ -108,7 +119,7 @@ struct ExerciseInterestsView: View {
             print("Failed to save interests: \(error)")
         }
 
-        onFinished()
+        await MainActor.run { onFinished() }
     }
 }
 
@@ -194,8 +205,10 @@ struct ExerciseInterestsView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             ExerciseInterestsView()
+                .environmentObject(AuthViewModel())
                 .preferredColorScheme(.light)
             ExerciseInterestsView()
+                .environmentObject(AuthViewModel())
                 .preferredColorScheme(.dark)
         }
     }
