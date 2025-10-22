@@ -1,18 +1,21 @@
-import SwiftUI
+import UIKit
 import FirebaseCore
+import GoogleSignIn   // ← add
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
     FirebaseApp.configure()
-    return true
-  }
 
-  // Email link & Google callback URLs
-  func application(_ app: UIApplication, open url: URL,
-                   options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-    // Email-link sign-in uses FirebaseAuth to check links; Google uses GIDSignIn
-    // We’ll handle both in the SwiftUI App via onOpenURL as well, but having this is good for safety.
-    return false
+    // ✅ Make sure GoogleSignIn has a clientID
+    if let clientID = FirebaseApp.app()?.options.clientID {
+      GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+    } else {
+      print("❌ Missing Firebase clientID; check GoogleService-Info.plist target membership.")
+    }
+
+    return true
   }
 }
