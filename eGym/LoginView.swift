@@ -1,77 +1,20 @@
 import SwiftUI
 
 struct LoginView: View {
-  @EnvironmentObject var auth: AuthViewModel
-  @State private var email: String = ""
-  @State private var password: String = ""
-  @State private var showPwd = false
-
+  @EnvironmentObject var auth: AuthViewModel   // fine to keep as EnvironmentObject now
   var body: some View {
     VStack(spacing: 18) {
       Text("Welcome to eGym").font(.title).bold()
 
-      // Email
-      TextField("Email", text: $email)
-        .textContentType(.emailAddress)
-        .keyboardType(.emailAddress)
-        .textInputAutocapitalization(.never)
-        .autocorrectionDisabled()
-        .padding().background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-
-      // Password
-      HStack {
-        if showPwd {
-          TextField("Password", text: $password)
-        } else {
-          SecureField("Password", text: $password)
-        }
-        Button(showPwd ? "Hide" : "Show") { showPwd.toggle() }
-      }
-      .textContentType(.password)
-      .padding().background(.thinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
-
-      // Email/Password actions
-      HStack {
-        Button("Sign In") {
-          Task {
-            auth.email = email
-            auth.password = password
-            await auth.signInWithEmail()
-          }
-        }
-        .buttonStyle(.borderedProminent)
-
-        Button("Sign Up") {
-          Task {
-            auth.email = email
-            auth.password = password
-            await auth.signUpWithEmail()
-          }
-        }
-        .buttonStyle(.bordered)
-      }
-
-      // Apple (use a plain button to trigger the VM; avoids funky generic init)
-      Button {
-        auth.startSignInWithApple()
-      } label: {
-        Label("Continue with Apple", systemImage: "apple.logo")
-          .frame(maxWidth: .infinity, minHeight: 44)
-      }
-      .buttonStyle(.bordered)
-
-      // Google
+      // GOOGLE ONLY
       Button {
         auth.signInWithGoogle()
       } label: {
         Label("Continue with Google", systemImage: "globe")
           .frame(maxWidth: .infinity, minHeight: 44)
       }
-      .buttonStyle(.bordered)
+      .buttonStyle(.borderedProminent)
 
-      // Status/debug
       Text(auth.status).font(.footnote).foregroundStyle(.secondary)
     }
     .padding()
