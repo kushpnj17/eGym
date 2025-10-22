@@ -26,7 +26,7 @@ struct eGymApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ExerciseInterestsView()
+            LoginView()
         }
     }
 }
