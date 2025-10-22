@@ -10,18 +10,33 @@ struct LoginView: View {
       Text("Welcome to eGym").font(.title).bold()
 
       // Email
-      TextField("Email", text: $auth.email)
-        .textContentType(.emailAddress)
-        .keyboardType(.emailAddress)
-        .textInputAutocapitalization(.never)
-        .autocorrectionDisabled()
-        .padding().background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+      TextField(
+        "Email",
+        text: Binding(
+          get: { auth.email },
+          set: { auth.email = $0 }
+        )
+      )
+      .textContentType(.emailAddress)
+      .keyboardType(.emailAddress)
+      .textInputAutocapitalization(.never)
+      .autocorrectionDisabled()
+      .padding().background(.thinMaterial)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
 
       // Password
       HStack {
-        if showPwd { TextField("Password", text: $auth.password) }
-        else { SecureField("Password", text: $auth.password) }
+        if showPwd {
+          TextField(
+            "Password",
+            text: Binding(get: { auth.password }, set: { auth.password = $0 })
+          )
+        } else {
+          SecureField(
+            "Password",
+            text: Binding(get: { auth.password }, set: { auth.password = $0 })
+          )
+        }
         Button(showPwd ? "Hide" : "Show") { showPwd.toggle() }
       }
       .padding().background(.thinMaterial)
