@@ -19,6 +19,7 @@
 		5C544DDA2EA8D52E005892B2 /* GULLogger in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DD92EA8D52E005892B2 /* GULLogger */; };
 		5C544DDC2EA8D52E005892B2 /* GULMethodSwizzler in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DDB2EA8D52E005892B2 /* GULMethodSwizzler */; };
 		5C544DDE2EA8D52E005892B2 /* GULNSData in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DDD2EA8D52E005892B2 /* GULNSData */; };
+		5C544DE42EA8E7F0005892B2 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 5C544DE32EA8E7F0005892B2 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +82,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C544DCF2EA8D50E005892B2 /* AppAuth in Frameworks */,
+				5C544DE42EA8E7F0005892B2 /* FirebaseFirestore in Frameworks */,
 				5C544DA62EA8D108005892B2 /* GoogleSignIn in Frameworks */,
 				5C544DC12EA8D316005892B2 /* FirebaseAuth in Frameworks */,
 				5C544DD62EA8D52E005892B2 /* GULAppDelegateSwizzler in Frameworks */,
@@ -172,6 +174,7 @@
 				5C544DD92EA8D52E005892B2 /* GULLogger */,
 				5C544DDB2EA8D52E005892B2 /* GULMethodSwizzler */,
 				5C544DDD2EA8D52E005892B2 /* GULNSData */,
+				5C544DE32EA8E7F0005892B2 /* FirebaseFirestore */,
 			);
 			productName = eGym;
 			productReference = 5CA3A19D2EA8A5C600D8763F /* eGym.app */;
@@ -649,7 +652,7 @@
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 15.0.0;
+				minimumVersion = 12.4.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -714,6 +717,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5C544DD42EA8D52E005892B2 /* XCRemoteSwiftPackageReference "GoogleUtilities" */;
 			productName = GULNSData;
+		};
+		5C544DE32EA8E7F0005892B2 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CA3A1CD2EA8CB1200D8763F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

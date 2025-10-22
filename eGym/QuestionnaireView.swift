@@ -1,17 +1,21 @@
 import SwiftUI
+import FirebaseFirestore
 
 // MARK: - Model
 
 struct ExerciseInterest: Identifiable, Hashable {
     let id = UUID()
     let title: String
-    let systemImage: String   // SF Symbol name (e.g., "figure.run")
+    let systemImage: String
     var isSelected: Bool = false
 }
 
 // MARK: - View
 
 struct ExerciseInterestsView: View {
+    @EnvironmentObject var auth: AuthViewModel
+    let onFinished: () -> Void = {}
+
     @State private var interests: [ExerciseInterest] = [
         .init(title: "Running",       systemImage: "figure.run"),
         .init(title: "Strength / Weights", systemImage: "dumbbell"),
@@ -26,12 +30,12 @@ struct ExerciseInterestsView: View {
         .init(title: "Crossfit",      systemImage: "flame"),
         .init(title: "Mindfulness",   systemImage: "brain.head.profile")
     ]
-    
+
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
     ]
-    
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -40,12 +44,12 @@ struct ExerciseInterestsView: View {
                         .font(.system(size: 34, weight: .bold))
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 8)
-                    
+
                     Text("Select a few to help personalize your workout recommendations.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.bottom, 8)
-                    
+
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(interests.indices, id: \.self) { i in
                             InterestChip(
@@ -62,17 +66,18 @@ struct ExerciseInterestsView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
-            
+
             // Bottom bar (sticky)
             Divider()
             HStack(spacing: 12) {
                 Button("Skip") {
-                    // TODO: handle skip
+                    Task { await saveSelections([]) }
                 }
                 .buttonStyle(OutlineBarButtonStyle())
-                
+
                 Button("Next") {
-                    // TODO: continue to next step
+                    let selected = interests.filter { $0.isSelected }.map(\.title)
+                    Task { await saveSelections(selected) }
                 }
                 .buttonStyle(FilledBarButtonStyle())
                 .disabled(!interests.contains(where: { $0.isSelected }))
@@ -83,6 +88,27 @@ struct ExerciseInterestsView: View {
             .background(.regularMaterial)
         }
         .background(Color(.systemBackground))
+    }
+
+    // MARK: - Firestore write
+
+    private func saveSelections(_ selected: [String]) async {
+        guard let uid = auth.user?.uid else { onFinished(); return }
+        let db = Firestore.firestore()
+
+        let payload: [String: Any] = [
+            "interests": selected,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        do {
+            try await db.collection("users").document(uid).setData(payload, merge: true)
+        } catch {
+            // You can surface this in UI later if you want
+            print("Failed to save interests: \(error)")
+        }
+
+        onFinished()
     }
 }
 
