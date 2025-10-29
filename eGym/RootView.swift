@@ -11,7 +11,7 @@ struct RootView: View {
     } else {
       NavigationStack {
         if showOnboarding {
-          ExerciseInterestsView(onFinished: {      // <-- no `auth:` here
+          QuestionnaireView(onFinished: {      // <-- no `auth:` here
             showOnboarding = false                 // go to Home after save/skip
           })
           .navigationBarBackButtonHidden(true)
