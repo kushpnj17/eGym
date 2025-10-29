@@ -1,2 +1,4 @@
 *.plist
-eGym/GoogleService-Info.plist
+# Ignore Firebase config plists anywhere in the repo
+**/GoogleService-Info.plist
+*.xcuserstate
