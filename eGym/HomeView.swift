@@ -32,3 +32,7 @@ struct HomeView: View {
     .background(Color(.systemBackground))
   }
 }
+
+#Preview {
+    HomeView()
+}

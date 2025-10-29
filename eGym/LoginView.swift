@@ -20,3 +20,8 @@ struct LoginView: View {
     .padding()
   }
 }
+
+
+#Preview {
+    LoginView().environmentObject(AuthViewModel())
+}
