@@ -2,6 +2,31 @@
 import SwiftUI
 import FirebaseFirestore
 
+// MARK: - Color Helpers & Palette
+
+extension Color {
+    init(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+        var rgb: UInt64 = 0
+        Scanner(string: hexSanitized).scanHexInt64(&rgb)
+
+        let r = Double((rgb >> 16) & 0xFF) / 255.0
+        let g = Double((rgb >> 8) & 0xFF) / 255.0
+        let b = Double(rgb & 0xFF) / 255.0
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: 1.0)
+    }
+}
+
+enum Palette {
+    static let bg            = Color(hex: "#F0F0F0")
+    static let accentPrimary = Color(hex: "#FE691E")
+    static let textPrimary   = Color(hex: "#434040")
+    static let accentRare    = Color(hex: "#077997")   // use sparingly
+    static let chipBase      = Color.white
+    static let chipStroke    = Color.black.opacity(0.08)
+}
+
 // MARK: - Main Container
 
 struct QuestionnaireView: View {
@@ -15,28 +40,33 @@ struct QuestionnaireView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(step.title)
-                        .font(.system(size: 34, weight: .bold))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 8)
+                GeometryReader { geo in
+                    // Centered column that is 90% of the screen width.
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(step.title)
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(Palette.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 8)
 
-                    Text(step.subtitle)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .padding(.bottom, 8)
+                        Text(step.subtitle)
+                            .font(.callout)
+                            .foregroundStyle(Palette.textPrimary.opacity(0.7))
+                            .padding(.bottom, 8)
 
-                    stepView
-                        .padding(.top, 4)
+                        stepView
+                            .padding(.top, 4)
+                    }
+                    .frame(width: geo.size.width * 0.9)       // << constrained column
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .frame(minHeight: 0) // let scroll view size naturally
             }
 
             Divider()
 
             HStack(spacing: 12) {
-                // Back or Skip on first step
                 if step == .goal {
                     Button("Skip") {
                         Task { await saveAndFinish() }
@@ -60,9 +90,10 @@ struct QuestionnaireView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(.regularMaterial)
+            .background(Palette.bg) // flat footer to match theme
         }
-        .background(Color(.systemBackground))
+        .background(Palette.bg)
+        .tint(Palette.accentPrimary)
     }
 
     // MARK: - Step Content
@@ -98,7 +129,6 @@ struct QuestionnaireView: View {
         case .goal:      return answers.goal != nil
         case .skill:     return answers.skillLevel != nil
         case .injuries:
-            // At least one option (including "None") OR custom text filled
             return !answers.injuries.isEmpty || !answers.injuryOther.trimmingCharacters(in: .whitespaces).isEmpty
         case .mobility:  return answers.mobilityLevel != nil
         case .equipment:
@@ -116,7 +146,6 @@ struct QuestionnaireView: View {
             return
         }
 
-        // Normalize "other" entries into arrays if provided
         var injuries = Array(answers.injuries)
         if !answers.injuryOther.trimmingCharacters(in: .whitespaces).isEmpty {
             injuries.append(answers.injuryOther.trimmingCharacters(in: .whitespaces))
@@ -190,29 +219,23 @@ extension QuestionnaireView {
     }
 
     struct Answers {
-        // 1) goal: single
-        var goal: String? = nil            // "strength", "endurance", etc.
-        // 2) skillLevel: single
-        var skillLevel: String? = nil      // "beginner", "intermediate", "advanced"
-        // 3) injuries: multi + other
-        var injuries: Set<String> = []     // ["knee", "shoulder", ...] or ["none"]
+        var goal: String? = nil
+        var skillLevel: String? = nil
+        var injuries: Set<String> = []
         var injuryOther: String = ""
-        // 4) mobilityLevel: single
-        var mobilityLevel: String? = nil   // "seated-only", "low-impact", "full-mobility"
-        // 5) equipment: multi + other
-        var equipment: Set<String> = []    // ["chair", "dumbbells", ...] or ["none"]
+        var mobilityLevel: String? = nil
+        var equipment: Set<String> = []
         var equipmentOther: String = ""
-        // 6) timePerDayMinutes: int
         var timePerDayMinutes: Int = 30
     }
 }
 
-// MARK: - Shared Chip
+// MARK: - Shared Chip (themed)
 
 struct PillChip: View {
     let title: String
     let isSelected: Bool
-    let leadingSystemImage: String?   // nil to hide, "checkmark" when selected or custom icon
+    let leadingSystemImage: String?
     let action: () -> Void
 
     var body: some View {
@@ -221,25 +244,33 @@ struct PillChip: View {
                 if let sys = leadingSystemImage {
                     ZStack {
                         Circle()
-                            .fill(isSelected ? Color.white.opacity(0.25) : Color(.systemGray6))
+                            .fill(isSelected ? Color.white.opacity(0.25) : Palette.bg)
                             .frame(width: 26, height: 26)
                         Image(systemName: sys)
                             .font(.system(size: sys == "checkmark" ? 12 : 13, weight: .semibold))
+                            .foregroundStyle(isSelected ? .white : Palette.textPrimary)
                     }
                 }
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
+                    .foregroundStyle(isSelected ? .white : Palette.textPrimary)
+
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .foregroundStyle(isSelected ? .white : .primary)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(isSelected ? Color.pink : Color(.systemGray6))
+                    .fill(isSelected ? Palette.accentPrimary : Palette.chipBase)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(isSelected ? Color.clear : Palette.chipStroke, lineWidth: 1)
+            )
+            .shadow(color: isSelected ? Palette.accentPrimary.opacity(0.15) : Color.black.opacity(0.04),
+                    radius: isSelected ? 8 : 6, x: 0, y: isSelected ? 4 : 3)
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
@@ -249,19 +280,7 @@ struct PillChip: View {
     }
 }
 
-// MARK: - Grid Helper
-
-//struct ChipGrid<Content: View>: View {
-//    let content: Content
-//    init(@ViewBuilder content: () -> Content) { self.content = content() }
-//
-//    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-//    var body: some View {
-//        LazyVGrid(columns: columns, spacing: 12) { content }
-//    }
-//}
-
-// MARK: - Step 1: Goal (single)
+// MARK: - Step 1: Goal (single) — 90% width column via parent
 
 struct GoalStepView: View {
     @Binding var selection: String?
@@ -276,20 +295,16 @@ struct GoalStepView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 12) {
-                ForEach(options) { opt in
-                    PillChip(
-                        title: opt.label,
-                        isSelected: selection == opt.key,
-                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                    ) { selection = opt.key }
-                    .frame(width: geo.size.width * 0.8)
-                }
+        VStack(spacing: 12) {
+            ForEach(options) { opt in
+                PillChip(
+                    title: opt.label,
+                    isSelected: selection == opt.key,
+                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                ) { selection = opt.key }
+                .frame(maxWidth: .infinity)  // fills the 90% parent column
             }
-            .frame(maxWidth: .infinity)   // center the column
         }
-        .frame(minHeight: 0)               // let parent size it
     }
 }
 
@@ -305,22 +320,19 @@ struct SkillStepView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 12) {
-                ForEach(options) { opt in
-                    PillChip(
-                        title: opt.label,
-                        isSelected: selection == opt.key,
-                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                    ) { selection = opt.key }
-                    .frame(width: geo.size.width * 0.8)
-                }
+        VStack(spacing: 12) {
+            ForEach(options) { opt in
+                PillChip(
+                    title: opt.label,
+                    isSelected: selection == opt.key,
+                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                ) { selection = opt.key }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
         }
-        .frame(minHeight: 0)
     }
 }
+
 // MARK: - Step 3: Injuries (multi + other)
 
 struct InjuriesStepView: View {
@@ -338,31 +350,26 @@ struct InjuriesStepView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(alignment: .center, spacing: 12) {
-                ForEach(options) { opt in
-                    let selected = selections.contains(opt.key)
-                    PillChip(
-                        title: opt.label,
-                        isSelected: selected,
-                        leadingSystemImage: selected ? "checkmark" : opt.icon
-                    ) { toggle(opt.key) }
-                    .frame(width: geo.size.width * 0.8)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Other (optional)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("Type any other limitations…", text: $otherText)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .frame(width: geo.size.width * 0.8)
-                .padding(.top, 4)
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(options) { opt in
+                let selected = selections.contains(opt.key)
+                PillChip(
+                    title: opt.label,
+                    isSelected: selected,
+                    leadingSystemImage: selected ? "checkmark" : opt.icon
+                ) { toggle(opt.key) }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Other (optional)")
+                    .font(.caption)
+                    .foregroundStyle(Palette.textPrimary.opacity(0.7))
+                TextField("Type any other limitations…", text: $otherText)
+                    .textFieldStyle(.roundedBorder)
+            }
+            .padding(.top, 4)
         }
-        .frame(minHeight: 0)
     }
 
     private func toggle(_ key: String) {
@@ -388,22 +395,19 @@ struct MobilityStepView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 12) {
-                ForEach(options) { opt in
-                    PillChip(
-                        title: opt.label,
-                        isSelected: selection == opt.key,
-                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                    ) { selection = opt.key }
-                    .frame(width: geo.size.width * 0.8)
-                }
+        VStack(spacing: 12) {
+            ForEach(options) { opt in
+                PillChip(
+                    title: opt.label,
+                    isSelected: selection == opt.key,
+                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                ) { selection = opt.key }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
         }
-        .frame(minHeight: 0)
     }
 }
+
 // MARK: - Step 5: Equipment (multi + other)
 
 struct EquipmentStepView: View {
@@ -420,31 +424,26 @@ struct EquipmentStepView: View {
     ]
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(alignment: .center, spacing: 12) {
-                ForEach(options) { opt in
-                    let selected = selections.contains(opt.key)
-                    PillChip(
-                        title: opt.label,
-                        isSelected: selected,
-                        leadingSystemImage: selected ? "checkmark" : opt.icon
-                    ) { toggle(opt.key) }
-                    .frame(width: geo.size.width * 0.8)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Other equipment (optional)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("E.g., kettlebell, barbell…", text: $otherText)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .frame(width: geo.size.width * 0.8)
-                .padding(.top, 4)
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(options) { opt in
+                let selected = selections.contains(opt.key)
+                PillChip(
+                    title: opt.label,
+                    isSelected: selected,
+                    leadingSystemImage: selected ? "checkmark" : opt.icon
+                ) { toggle(opt.key) }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Other equipment (optional)")
+                    .font(.caption)
+                    .foregroundStyle(Palette.textPrimary.opacity(0.7))
+                TextField("E.g., kettlebell, barbell…", text: $otherText)
+                    .textFieldStyle(.roundedBorder)
+            }
+            .padding(.top, 4)
         }
-        .frame(minHeight: 0)
     }
 
     private func toggle(_ key: String) {
@@ -457,52 +456,51 @@ struct EquipmentStepView: View {
     }
 }
 
-// MARK: - Step 6: Time (slider)
+// MARK: - Step 6: Time (slider) — themed
 
 struct TimeCommitmentStepView: View {
     @Binding var minutes: Int
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("Daily time: ").font(.headline)
-                    Text("\(minutes) min").font(.headline.weight(.semibold))
-                }
-
-                Slider(
-                    value: Binding<Double>(
-                        get: { Double(minutes) },
-                        set: { minutes = Int($0.rounded(.toNearestOrAwayFromZero)) }
-                    ),
-                    in: 5...180,
-                    step: 5
-                )
-
-                HStack {
-                    Text("5 min").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Text("180 min").font(.caption).foregroundStyle(.secondary)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Daily time: ").font(.headline).foregroundStyle(Palette.textPrimary)
+                Text("\(minutes) min").font(.headline.weight(.semibold)).foregroundStyle(Palette.textPrimary)
             }
-            .frame(width: geo.size.width * 0.8)
-            .frame(maxWidth: .infinity, alignment: .center)
+
+            Slider(
+                value: Binding<Double>(
+                    get: { Double(minutes) },
+                    set: { minutes = Int($0.rounded(.toNearestOrAwayFromZero)) }
+                ),
+                in: 5...180,
+                step: 5
+            )
+            .tint(Palette.accentPrimary)
+
+            HStack {
+                Text("5 min").font(.caption).foregroundStyle(Palette.textPrimary.opacity(0.7))
+                Spacer()
+                Text("180 min").font(.caption).foregroundStyle(Palette.textPrimary.opacity(0.7))
+            }
         }
-        .frame(minHeight: 0)
     }
 }
 
-// MARK: - Button Styles (reuse from your file if already defined)
+// MARK: - Button Styles (themed)
 
 struct FilledBarButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.pink))
-            .foregroundStyle(.white)
+            .background(
+                RoundedRectangle(cornerRadius: 12).fill(Palette.accentPrimary)
+            )
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .shadow(color: Palette.accentPrimary.opacity(0.18), radius: 10, x: 0, y: 6)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
@@ -511,17 +509,16 @@ struct OutlineBarButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
+            .foregroundStyle(Palette.textPrimary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.pink, lineWidth: 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12).fill(Color.clear)
-                    )
+                    .stroke(Palette.textPrimary.opacity(0.6), lineWidth: 1.5)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(.white))
             )
-            .foregroundStyle(Color.pink)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 3)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
