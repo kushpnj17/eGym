@@ -251,15 +251,15 @@ struct PillChip: View {
 
 // MARK: - Grid Helper
 
-struct ChipGrid<Content: View>: View {
-    let content: Content
-    init(@ViewBuilder content: () -> Content) { self.content = content() }
-
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 12) { content }
-    }
-}
+//struct ChipGrid<Content: View>: View {
+//    let content: Content
+//    init(@ViewBuilder content: () -> Content) { self.content = content() }
+//
+//    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+//    var body: some View {
+//        LazyVGrid(columns: columns, spacing: 12) { content }
+//    }
+//}
 
 // MARK: - Step 1: Goal (single)
 
@@ -276,15 +276,20 @@ struct GoalStepView: View {
     ]
 
     var body: some View {
-        ChipGrid {
-            ForEach(options) { opt in
-                PillChip(
-                    title: opt.label,
-                    isSelected: selection == opt.key,
-                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                ) { selection = opt.key }
+        GeometryReader { geo in
+            VStack(spacing: 12) {
+                ForEach(options) { opt in
+                    PillChip(
+                        title: opt.label,
+                        isSelected: selection == opt.key,
+                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                    ) { selection = opt.key }
+                    .frame(width: geo.size.width * 0.8)
+                }
             }
+            .frame(maxWidth: .infinity)   // center the column
         }
+        .frame(minHeight: 0)               // let parent size it
     }
 }
 
@@ -300,18 +305,22 @@ struct SkillStepView: View {
     ]
 
     var body: some View {
-        ChipGrid {
-            ForEach(options) { opt in
-                PillChip(
-                    title: opt.label,
-                    isSelected: selection == opt.key,
-                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                ) { selection = opt.key }
+        GeometryReader { geo in
+            VStack(spacing: 12) {
+                ForEach(options) { opt in
+                    PillChip(
+                        title: opt.label,
+                        isSelected: selection == opt.key,
+                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                    ) { selection = opt.key }
+                    .frame(width: geo.size.width * 0.8)
+                }
             }
+            .frame(maxWidth: .infinity)
         }
+        .frame(minHeight: 0)
     }
 }
-
 // MARK: - Step 3: Injuries (multi + other)
 
 struct InjuriesStepView: View {
@@ -329,44 +338,40 @@ struct InjuriesStepView: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ChipGrid {
+        GeometryReader { geo in
+            VStack(alignment: .center, spacing: 12) {
                 ForEach(options) { opt in
                     let selected = selections.contains(opt.key)
                     PillChip(
                         title: opt.label,
                         isSelected: selected,
                         leadingSystemImage: selected ? "checkmark" : opt.icon
-                    ) {
-                        toggle(opt.key)
-                    }
+                    ) { toggle(opt.key) }
+                    .frame(width: geo.size.width * 0.8)
                 }
-            }
 
-            // Other text
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Other (optional)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Type any other limitations…", text: $otherText)
-                    .textFieldStyle(.roundedBorder)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Other (optional)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("Type any other limitations…", text: $otherText)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .frame(width: geo.size.width * 0.8)
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
+            .frame(maxWidth: .infinity)
         }
+        .frame(minHeight: 0)
     }
 
     private func toggle(_ key: String) {
         if key == "none" {
-            // "None" is exclusive
-            if selections.contains("none") {
-                selections.remove("none")
-            } else {
-                selections = ["none"]
-            }
+            if selections.contains("none") { selections.remove("none") }
+            else { selections = ["none"] }
         } else {
             selections.remove("none")
-            if selections.contains(key) { selections.remove(key) }
-            else { selections.insert(key) }
+            if selections.contains(key) { selections.remove(key) } else { selections.insert(key) }
         }
     }
 }
@@ -377,24 +382,28 @@ struct MobilityStepView: View {
     @Binding var selection: String?
     private struct Option: Identifiable { let id = UUID(); let label: String; let key: String; let icon: String }
     private let options: [Option] = [
-        .init(label: "Seated-only (low mobility)",              key: "seated-only", icon: "chair"),
-        .init(label: "Low-impact (standing, light movement)",   key: "low-impact",  icon: "figure.stand"),
-        .init(label: "Full mobility (able-bodied)",             key: "full-mobility", icon: "figure.walk")
+        .init(label: "Seated-only (low mobility)",            key: "seated-only",  icon: "chair"),
+        .init(label: "Low-impact (standing, light movement)", key: "low-impact",   icon: "figure.stand"),
+        .init(label: "Full mobility (able-bodied)",           key: "full-mobility",icon: "figure.walk")
     ]
 
     var body: some View {
-        ChipGrid {
-            ForEach(options) { opt in
-                PillChip(
-                    title: opt.label,
-                    isSelected: selection == opt.key,
-                    leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
-                ) { selection = opt.key }
+        GeometryReader { geo in
+            VStack(spacing: 12) {
+                ForEach(options) { opt in
+                    PillChip(
+                        title: opt.label,
+                        isSelected: selection == opt.key,
+                        leadingSystemImage: selection == opt.key ? "checkmark" : opt.icon
+                    ) { selection = opt.key }
+                    .frame(width: geo.size.width * 0.8)
+                }
             }
+            .frame(maxWidth: .infinity)
         }
+        .frame(minHeight: 0)
     }
 }
-
 // MARK: - Step 5: Equipment (multi + other)
 
 struct EquipmentStepView: View {
@@ -403,50 +412,47 @@ struct EquipmentStepView: View {
 
     private struct Option: Identifiable { let id = UUID(); let label: String; let key: String; let icon: String }
     private let options: [Option] = [
-        .init(label: "Chair",            key: "chair",            icon: "chair"),
-        .init(label: "Dumbbells",        key: "dumbbells",        icon: "dumbbell"),
-        .init(label: "Resistance bands", key: "resistance-band",  icon: "bandage"),
-        .init(label: "Yoga mat",         key: "yoga-mat",         icon: "rectangle.portrait"),
-        .init(label: "None",             key: "none",             icon: "nosign")
+        .init(label: "Chair",            key: "chair",           icon: "chair"),
+        .init(label: "Dumbbells",        key: "dumbbells",       icon: "dumbbell"),
+        .init(label: "Resistance bands", key: "resistance-band", icon: "bandage"),
+        .init(label: "Yoga mat",         key: "yoga-mat",        icon: "rectangle.portrait"),
+        .init(label: "None",             key: "none",            icon: "nosign")
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ChipGrid {
+        GeometryReader { geo in
+            VStack(alignment: .center, spacing: 12) {
                 ForEach(options) { opt in
                     let selected = selections.contains(opt.key)
                     PillChip(
                         title: opt.label,
                         isSelected: selected,
                         leadingSystemImage: selected ? "checkmark" : opt.icon
-                    ) {
-                        toggle(opt.key)
-                    }
+                    ) { toggle(opt.key) }
+                    .frame(width: geo.size.width * 0.8)
                 }
-            }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Other equipment (optional)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("E.g., kettlebell, barbell…", text: $otherText)
-                    .textFieldStyle(.roundedBorder)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Other equipment (optional)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("E.g., kettlebell, barbell…", text: $otherText)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .frame(width: geo.size.width * 0.8)
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
+            .frame(maxWidth: .infinity)
         }
+        .frame(minHeight: 0)
     }
 
     private func toggle(_ key: String) {
         if key == "none" {
-            if selections.contains("none") {
-                selections.remove("none")
-            } else {
-                selections = ["none"]
-            }
+            if selections.contains("none") { selections.remove("none") } else { selections = ["none"] }
         } else {
             selections.remove("none")
-            if selections.contains(key) { selections.remove(key) }
-            else { selections.insert(key) }
+            if selections.contains(key) { selections.remove(key) } else { selections.insert(key) }
         }
     }
 }
@@ -455,37 +461,34 @@ struct EquipmentStepView: View {
 
 struct TimeCommitmentStepView: View {
     @Binding var minutes: Int
-    @State private var internalValue: Double = 30
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Daily time: ")
-                    .font(.headline)
-                Text("\(minutes) min")
-                    .font(.headline.weight(.semibold))
-            }
+        GeometryReader { geo in
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text("Daily time: ").font(.headline)
+                    Text("\(minutes) min").font(.headline.weight(.semibold))
+                }
 
-            Slider(
-                value: Binding<Double>(
-                    get: { Double(minutes) },
-                    set: { minutes = Int($0.rounded(.toNearestOrAwayFromZero)) }
-                ),
-                in: 5...180,
-                step: 5
-            )
+                Slider(
+                    value: Binding<Double>(
+                        get: { Double(minutes) },
+                        set: { minutes = Int($0.rounded(.toNearestOrAwayFromZero)) }
+                    ),
+                    in: 5...180,
+                    step: 5
+                )
 
-            HStack {
-                Text("5 min")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("180 min")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("5 min").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("180 min").font(.caption).foregroundStyle(.secondary)
+                }
             }
+            .frame(width: geo.size.width * 0.8)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .onAppear { internalValue = Double(minutes) }
+        .frame(minHeight: 0)
     }
 }
 
