@@ -1,3 +1,43 @@
-# Ignore Firebase config plists anywhere in the repo
+# --- macOS cruft ---
+.DS_Store
+
+# --- Xcode user/state files (never useful in git) ---
+**/*.xcuserstate
+**/xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+DerivedData/
+
+# --- Swift / Xcode build artifacts ---
+.build/
+# build/    # (Only add if you manually create a top-level build/)
+
+# --- Swift Playgrounds noise ---
+timeline.xctimeline
+playground.xcworkspace
+
+# --- Carthage ---
+Carthage/Build/
+
+# --- fastlane outputs ---
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# --- Firebase / Google secrets (REAL plist stays local only) ---
 **/GoogleService-Info.plist
-*.xcuserstate
+
+# --- Editors/IDEs (optional but handy) ---
+.vscode/
+.idea/
+
+# --- CocoaPods (usually commit Pods/ = false; uncomment if you want to ignore) ---
+# Pods/
+
+# --- Swift Package Manager (usually DO commit Package.resolved) ---
+# .swiftpm
+# Packages/
+# Package.resolved
+# *.xcodeproj
+# *.xcworkspace
