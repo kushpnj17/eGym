@@ -1,91 +1,128 @@
-//
-//  AuthViewModel.swift
-//  eGym
-//
-//  Google-only AuthViewModel (stable).
-//  Requirements:
-//   - AppDelegate sets GIDSignIn.sharedInstance.configuration using FirebaseApp.app()?.options.clientID
-//   - URL Types includes REVERSED_CLIENT_ID from GoogleService-Info.plist
-//   - Packages linked to app target: FirebaseCore, FirebaseAuth, GoogleSignIn
-//
-
 import Foundation
 import FirebaseAuth
+import FirebaseCore
 import GoogleSignIn
 import UIKit
+import FirebaseFirestore
+import os
 
 @MainActor
 final class AuthViewModel: NSObject, ObservableObject {
-  // Firebase user (nil when signed out)
   @Published var user: User?
-  // Surface short status/debug messages in UI
   @Published var status: String = ""
+  @Published var profile: UserProfile?
+
+  private let profileService = ProfileService()
+  private let logger = Logger(subsystem: "com.egym.app", category: "auth")
 
   override init() {
     super.init()
     self.user = Auth.auth().currentUser
-    // Keep user in sync
+    logger.info("AuthViewModel init. currentUser: \(self.user?.uid ?? "nil", privacy: .public)")
+    status = self.user != nil ? "Restored session" : "Signed out"
+
     _ = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-      self?.user = user
-    }
-  }
-
-  // MARK: - Google Sign-In
-  func signInWithGoogle() {
-    // Find a safe presenter VC (avoids NSException: presentingViewController must be set)
-    guard let presenter = Self.topViewController() else {
-      status = "Google: no presenter VC"
-      return
-    }
-
-    // At app launch, AppDelegate should have set:
-    // GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: FirebaseApp.app()?.options.clientID)
-    GIDSignIn.sharedInstance.signIn(withPresenting: presenter) { [weak self] result, error in
-      guard let self = self else { return }
-      if let error = error {
-        self.status = "Google error: \(error.localizedDescription)"
-        return
-      }
-
-      guard
-        let idToken = result?.user.idToken?.tokenString,
-        let accessToken = result?.user.accessToken.tokenString
-      else {
-        self.status = "Google: missing tokens"
-        return
-      }
-
-      let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
-
-      Task {
-        do {
-          let authRes = try await Auth.auth().signIn(with: credential)
-          self.user = authRes.user
-          self.status = "Signed in with Google as \(authRes.user.email ?? "")"
-        } catch {
-          self.status = "Firebase Google error: \(error.localizedDescription)"
+      guard let self else { return }
+      Task { @MainActor in
+        self.user = user
+        if let uid = user?.uid {
+          self.logger.info("Auth state change → signed in as \(uid, privacy: .public)")
+          self.status = "Signed in (state listener)"
+          do {
+            self.logger.info("Loading profile for uid \(uid, privacy: .public)")
+            self.profile = try await self.profileService.getOrCreate(uid: uid)
+            self.logger.info("Profile loaded. onboardingCompleted=\(self.profile?.onboardingCompleted ?? false, privacy: .public)")
+          } catch {
+            self.logger.error("Profile load error: \(error.localizedDescription, privacy: .public)")
+            self.status = "Profile load error: \(error.localizedDescription)"
+          }
+        } else {
+          self.logger.info("Auth state change → signed OUT")
+          self.profile = nil
+          self.status = "Signed out"
         }
       }
     }
   }
 
-  // MARK: - URL callback handler (keep this wired in eGymApp.onOpenURL)
+  // MARK: Google Sign-In
+    func signInWithGoogle() {
+      logger.info("signInWithGoogle tapped")
+
+      guard let presenter = Self.topViewController() else {
+        Task { @MainActor in self.status = "Google: no presenter VC" }
+        logger.error("No presenter VC")
+        return
+      }
+
+      let gidClient = GIDSignIn.sharedInstance.configuration?.clientID ?? "nil"
+      let fbClient  = FirebaseApp.app()?.options.clientID ?? "nil"
+      logger.info("GID=\(gidClient, privacy: .public) | FB=\(fbClient, privacy: .public)")
+
+      GIDSignIn.sharedInstance.signIn(withPresenting: presenter) { [weak self] result, error in
+        guard let self = self else { return }
+
+        if let error = error as NSError? {
+          Task { @MainActor in
+            self.status = (error.domain == kGIDSignInErrorDomain &&
+                           error.code == GIDSignInError.canceled.rawValue)
+                          ? "Google: cancelled"
+                          : "Google error: \(error.localizedDescription)"
+          }
+          self.logger.error("Google sign-in error: \(error.localizedDescription, privacy: .public)")
+          return
+        }
+
+        guard
+          let gidUser = result?.user,
+          let idToken = gidUser.idToken?.tokenString
+        else {
+          Task { @MainActor in self.status = "Google: missing tokens" }
+          self.logger.error("Missing Google tokens")
+          return
+        }
+
+        let credential = GoogleAuthProvider.credential(
+          withIDToken: idToken,
+          accessToken: gidUser.accessToken.tokenString
+        )
+
+        Task {
+          do {
+            let authRes = try await Auth.auth().signIn(with: credential)
+            await MainActor.run {
+              self.user = authRes.user
+              self.status = "Signed in as \(authRes.user.email ?? authRes.user.uid)"
+            }
+            self.logger.info("Firebase signIn success uid \(authRes.user.uid, privacy: .public)")
+            // profile loads via state listener
+          } catch {
+            let e = error as NSError
+            await MainActor.run { self.status = "Firebase Google error: \(e.code)" }
+            self.logger.error("Firebase signIn error \(e.code, privacy: .public) \(e.localizedDescription, privacy: .public)")
+          }
+        }
+      }
+    }
+
   func handleOpenURL(_ url: URL) {
+    logger.info("handleOpenURL: \(url.absoluteString, privacy: .public)")
     _ = GIDSignIn.sharedInstance.handle(url)
   }
 
-  // MARK: - Sign out
   func signOut() {
     do {
       try Auth.auth().signOut()
       self.user = nil
+      self.profile = nil
       self.status = "Signed out"
+      logger.info("Manual sign out complete")
     } catch {
       self.status = "Sign out error: \(error.localizedDescription)"
+      logger.error("Sign out error: \(error.localizedDescription, privacy: .public)")
     }
   }
 
-  // MARK: - Presenter helper
   private static func topViewController(
     base: UIViewController? = UIApplication.shared.connectedScenes
       .compactMap { $0 as? UIWindowScene }
