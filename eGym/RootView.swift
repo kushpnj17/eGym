@@ -7,7 +7,7 @@ struct RootView: View {
 
   var body: some View {
     if auth.user == nil {
-      LoginView()
+      LaunchAuthView()
     } else {
       NavigationStack {
         if showOnboarding {

@@ -418,6 +418,7 @@ struct EquipmentStepView: View {
     private let options: [Option] = [
         .init(label: "Chair",            key: "chair",           icon: "chair"),
         .init(label: "Dumbbells",        key: "dumbbells",       icon: "dumbbell"),
+        .init(label: "Weight Rack",            key: "chair",           icon: "chair"),
         .init(label: "Resistance bands", key: "resistance-band", icon: "bandage"),
         .init(label: "Yoga mat",         key: "yoga-mat",        icon: "rectangle.portrait"),
         .init(label: "None",             key: "none",            icon: "nosign")
@@ -474,12 +475,12 @@ struct TimeCommitmentStepView: View {
                     set: { minutes = Int($0.rounded(.toNearestOrAwayFromZero)) }
                 ),
                 in: 5...180,
-                step: 5
+                step: 10
             )
             .tint(Palette.accentPrimary)
 
             HStack {
-                Text("5 min").font(.caption).foregroundStyle(Palette.textPrimary.opacity(0.7))
+                Text("10 min").font(.caption).foregroundStyle(Palette.textPrimary.opacity(0.7))
                 Spacer()
                 Text("180 min").font(.caption).foregroundStyle(Palette.textPrimary.opacity(0.7))
             }
