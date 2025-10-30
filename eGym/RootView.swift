@@ -47,18 +47,6 @@ struct RootView: View {
   }
 }
 
-// Simple splash you can customize
-struct SplashView: View {
-  var body: some View {
-    ZStack {
-      Color.clear.egymBackground()
-      VStack(spacing: 12) {
-        Image("egymLogo").resizable().scaledToFit().frame(width: 120, height: 120)
-        ProgressView()
-      }
-    }
-  }
-}
 
 #Preview {
   RootView().environmentObject(AuthViewModel())
