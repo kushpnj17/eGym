@@ -8,6 +8,14 @@
 import Foundation
 import FirebaseFirestore
 
+private let dayOrder: [String] = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+private func ordered(_ days: [DayPlan]) -> [DayPlan] {
+  days.sorted { (a, b) in
+    (dayOrder.firstIndex(of: a.day) ?? 0) < (dayOrder.firstIndex(of: b.day) ?? 0)
+  }
+}
+
+
 final class HomeVM: ObservableObject {
     @Published var plan: WorkoutPlan?
     @Published var today: DayPlan?

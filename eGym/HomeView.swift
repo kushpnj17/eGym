@@ -1,11 +1,7 @@
-//
-//  HomeView.swift
-//  eGym
-//
-//  Created by Kush Patel on 10/22/25.
-//
 import SwiftUI
 import FirebaseAuth
+import FirebaseFirestore
+
 struct HomeView: View {
   @EnvironmentObject var auth: AuthViewModel
   @StateObject private var vm = HomeVM()
@@ -17,13 +13,14 @@ struct HomeView: View {
 
   var body: some View {
     NavigationStack {
-      VStack(spacing: 24) {
+      VStack(spacing: 16) {
         // Header
         VStack(spacing: 8) {
           Text("Welcome back, \(displayName) 👋")
             .font(.largeTitle).bold()
             .foregroundColor(Palette.textPrimary)
             .multilineTextAlignment(.center)
+
           Text("What should we work on today?")
             .font(.subheadline)
             .foregroundColor(.secondary)
@@ -31,7 +28,7 @@ struct HomeView: View {
         .padding(.horizontal, 24)
         .padding(.top, 8)
 
-        // Today card
+        // Today card (from HomeVM)
         Group {
           if vm.loading {
             ProgressView().padding()
@@ -45,10 +42,35 @@ struct HomeView: View {
         }
         .padding(.horizontal, 24)
 
+        // 🔽 NEW: View current plan button
+        if let plan = vm.plan {
+          NavigationLink {
+            WeeklyPlanView(plan: plan)
+          } label: {
+            HStack(spacing: 8) {
+              Image(systemName: "calendar")
+              Text("View current plan")
+                .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.bordered)
+          .tint(Palette.accentPrimary)
+          .padding(.horizontal, 24)
+        }
+        
+        StrengthRatingCard()
+              .padding(.horizontal, 24)
+          
         Spacer(minLength: 16)
 
-        Button { auth.signOut() } label: {
-          Text("Sign out").fontWeight(.semibold).frame(maxWidth: .infinity)
+        // Sign out
+        Button {
+          auth.signOut()
+        } label: {
+          Text("Sign out")
+            .fontWeight(.semibold)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .tint(Palette.accentPrimary)
@@ -65,6 +87,8 @@ struct HomeView: View {
   }
 }
 
+// MARK: - Supporting Cards for Home
+
 private struct TodayCard: View {
   let day: DayPlan
   let planName: String
@@ -73,54 +97,56 @@ private struct TodayCard: View {
     NavigationLink {
       SessionView(day: day, planName: planName)
     } label: {
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .fill(Color.white.opacity(0.92))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.6), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 6)
-        .frame(maxWidth: .infinity, minHeight: 140)
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .fill(Color.white.opacity(0.9))
         .overlay(
-          VStack(spacing: 8) {
-            HStack {
-              Text("Today’s Plan • \(day.day)")
-                .font(.headline).foregroundColor(Palette.textPrimary)
-              Spacer()
-              Text("\(day.estimated_minutes) min")
-                .font(.subheadline).foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
+          RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .stroke(Color.white.opacity(0.6), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+        .frame(maxWidth: .infinity)
+        .frame(height: 100) // ↓ was 140; feels much tighter
+        .overlay(
+          HStack(spacing: 12) {
+            // left rail (day + minutes)
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Today • \(day.day)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(Palette.textPrimary)
 
-            Text(day.target_focus)
-              .font(.subheadline)
-              .foregroundColor(.secondary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 16)
+              Text(day.target_focus)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-            if day.day_type == "rest" {
-              Text(day.notes ?? "Rest day.")
-                .font(.footnote).foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-            } else {
-              // Peek at first 2 exercises
-              if let ex = day.exercises {
-                VStack(alignment: .leading, spacing: 6) {
-                  ForEach(ex.prefix(2)) { e in
-                    HStack {
-                      Text(e.name).font(.subheadline).foregroundColor(Palette.textPrimary)
-                      Spacer()
-                      Text("\(e.sets) × \(e.reps_or_time)").font(.footnote).foregroundColor(.secondary)
-                    }
-                  }
-                  if ex.count > 2 {
-                    Text("…and \(ex.count - 2) more").font(.footnote).foregroundColor(.secondary)
-                  }
-                }
-                .padding(.horizontal, 16)
+              if day.day_type == "rest" {
+                Text(day.notes ?? "Rest day.")
+                  .font(.caption2)
+                  .foregroundColor(.secondary)
+                  .lineLimit(1)
+              } else if let ex = day.exercises?.first {
+                // show only first exercise inline
+                Text("\(ex.name): \(ex.sets)×\(ex.reps_or_time)")
+                  .font(.caption2)
+                  .foregroundColor(.secondary)
+                  .lineLimit(1)
+                  .truncationMode(.tail)
               }
             }
+
+            Spacer(minLength: 8)
+
+            // right tag (minutes)
+            Text("\(day.estimated_minutes) min")
+              .font(.caption.weight(.semibold))
+              .padding(.horizontal, 10)
+              .padding(.vertical, 6)
+              .background(Color.gray.opacity(0.12))
+              .clipShape(Capsule())
+              .foregroundStyle(.secondary)
           }
-          .padding(.vertical, 14)
+          .padding(.horizontal, 14)
         )
     }
     .buttonStyle(.plain)
@@ -130,21 +156,38 @@ private struct TodayCard: View {
 private struct ErrorCard: View {
   let text: String
   var body: some View {
-    RoundedRectangle(cornerRadius: 16).fill(Color.red.opacity(0.09))
-      .overlay(Text(text).font(.subheadline).foregroundColor(.red).padding())
+    RoundedRectangle(cornerRadius: 16)
+      .fill(Color.red.opacity(0.09))
+      .overlay(
+        Text(text)
+          .font(.subheadline)
+          .foregroundColor(.red)
+          .padding()
+      )
       .frame(maxWidth: .infinity, minHeight: 100)
   }
 }
 
 private struct EmptyCard: View {
   var body: some View {
-    RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.72))
+    RoundedRectangle(cornerRadius: 16)
+      .fill(Color.white.opacity(0.72))
       .overlay(
         VStack(spacing: 6) {
-          Text("No active plan").font(.headline).foregroundColor(Palette.textPrimary)
-          Text("Create or activate a plan to get started").font(.subheadline).foregroundColor(.secondary)
+          Text("No active plan")
+            .font(.headline)
+            .foregroundColor(Palette.textPrimary)
+          Text("Create or activate a plan to get started")
+            .font(.subheadline)
+            .foregroundColor(.secondary)
         }
       )
       .frame(maxWidth: .infinity, minHeight: 120)
   }
+}
+
+
+#Preview {
+  HomeView()
+    .environmentObject(AuthViewModel())
 }
