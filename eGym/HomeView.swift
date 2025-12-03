@@ -42,8 +42,9 @@ struct HomeView: View {
         }
         .padding(.horizontal, 24)
 
-        // 🔽 NEW: View current plan button
+        // 🔽 Current plan / generate plan button
         if let plan = vm.plan {
+          // If a plan exists, let them view it
           NavigationLink {
             WeeklyPlanView(plan: plan)
           } label: {
@@ -57,6 +58,22 @@ struct HomeView: View {
           .buttonStyle(.bordered)
           .tint(Palette.accentPrimary)
           .padding(.horizontal, 24)
+        } else if let uid = auth.user?.uid {
+          // If no plan yet, let them generate one
+          Button {
+            Task { await vm.generatePlan(uid: uid) }
+          } label: {
+            HStack(spacing: 8) {
+              Image(systemName: "wand.and.stars")
+              Text(vm.loading ? "Generating plan..." : "Generate my weekly plan")
+                .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.borderedProminent)
+          .tint(Palette.accentPrimary)
+          .padding(.horizontal, 24)
+          .disabled(vm.loading)
         }
         
         StrengthRatingCard()
