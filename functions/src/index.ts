@@ -259,7 +259,7 @@ ${JSON.stringify(profile, null, 2)}
       );
     }
 
-    // Some models occasionally wrap JSON in ```...``` — strip that if present a
+    // Some models occasionally wrap JSON in ```...``` — strip that if present
     const cleaned = raw.replace(/```json/i, "").replace(/```/g, "").trim();
 
     let planJson: any;
