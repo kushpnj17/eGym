@@ -1,13 +1,25 @@
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct WeeklyPlanView: View {
   let plan: WorkoutPlan
+
+  // Editable name state
+  @State private var editableName: String
+  @State private var isEditingName = false
+  @FocusState private var nameFieldFocused: Bool
 
   private let dayOrder: [String] = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
   private var days: [DayPlan] {
     plan.week.sorted { (a, b) in
       (dayOrder.firstIndex(of: a.day) ?? 0) < (dayOrder.firstIndex(of: b.day) ?? 0)
     }
+  }
+
+  init(plan: WorkoutPlan) {
+    self.plan = plan
+    _editableName = State(initialValue: plan.name)   // WorkoutPlan.name is non-optional
   }
 
   var body: some View {
@@ -20,8 +32,29 @@ struct WeeklyPlanView: View {
         // Header
         Section {
           VStack(alignment: .leading, spacing: 6) {
-            Text(plan.name)
-              .font(.headline)
+
+            HStack(spacing: 8) {
+              if isEditingName {
+                TextField("Plan name", text: $editableName)
+                  .font(.headline)
+                  .focused($nameFieldFocused)
+                  .submitLabel(.done)
+                  .onSubmit { finishEditing() }
+              } else {
+                Text(editableName)
+                  .font(.headline)
+                  .onTapGesture { startEditing() }
+              }
+
+              Button {
+                isEditingName ? finishEditing() : startEditing()
+              } label: {
+                Image(systemName: "pencil")
+                  .imageScale(.small)
+                  .foregroundColor(.black)   // black edit icon
+              }
+              .buttonStyle(.plain)
+            }
 
             Text("\(plan.profile.goal.capitalized) • \(plan.profile.skillLevel.capitalized) • \(plan.profile.timePerDayMinutes) min/day")
               .font(.footnote)
@@ -50,7 +83,8 @@ struct WeeklyPlanView: View {
         ForEach(days) { day in
           Section {
             NavigationLink {
-              SessionView(day: day, planName: plan.name)
+              // Use updated name
+              SessionView(day: day, planName: editableName)
             } label: {
               DayRow(day: day)
             }
@@ -68,6 +102,57 @@ struct WeeklyPlanView: View {
       .scrollContentBackground(.hidden)  // let gradient show behind the list
     }
     .navigationTitle("Current Plan")
+  }
+
+  // MARK: - Editing helpers
+
+  private func startEditing() {
+    isEditingName = true
+    DispatchQueue.main.async {
+      nameFieldFocused = true
+    }
+  }
+
+  private func finishEditing() {
+    let trimmed = editableName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if trimmed.isEmpty {
+      // Revert if user clears text
+      editableName = plan.name
+    } else {
+      editableName = trimmed
+      updatePlanNameInFirestore()
+    }
+
+    isEditingName = false
+    nameFieldFocused = false
+  }
+
+  private func updatePlanNameInFirestore() {
+    let originalName = plan.name ?? ""
+    guard editableName != originalName else { return }
+    guard let uid = Auth.auth().currentUser?.uid else {
+        print("❌ No authenticated user – cannot update plan name")
+        return
+    }
+    // 🔴 Unwrap the optional id
+    guard let planId = plan.id else {
+        print("❌ WorkoutPlan has no id – cannot update plan name")
+        return
+    }
+
+    let db = Firestore.firestore()
+    db.collection("users")
+      .document(uid)
+      .collection("workoutPlans")
+      .document(planId)                // use unwrapped id
+      .updateData(["name": editableName]) { error in
+          if let error = error {
+              print("❌ Failed to update plan name: \(error)")
+          } else {
+              print("✅ Plan name updated to \(editableName)")
+          }
+      }
   }
 }
 
