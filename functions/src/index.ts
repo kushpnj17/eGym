@@ -11,7 +11,9 @@ admin.initializeApp();
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 export const generateWorkoutPlan = onCall(
-  { secrets: [OPENAI_API_KEY] },
+  { secrets: [OPENAI_API_KEY],
+    timeoutSeconds: 300,
+  },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -287,8 +289,18 @@ ${JSON.stringify(profile, null, 2)}
         ? goal.charAt(0).toUpperCase() + goal.slice(1)
         : "Workout";
 
+    // Count existing plans for this user with the same goal
+    const existingSameGoalSnap = await userRef
+      .collection("workoutPlans")
+      .where("profile.goal", "==", goal)
+      .get();
+
+    const index = existingSameGoalSnap.size + 1;
+    const suffix = index > 1 ? ` ${index}` : "";
+
+    // e.g. "Weekly Strength Plan", then "Weekly Strength Plan 2", etc.
     const planDoc = {
-      name: `Weekly ${niceGoal} Plan`,
+      name: `Weekly ${niceGoal} Plan${suffix}`,
       version: 1,
       status: "active",
       profile: planJson.profile,

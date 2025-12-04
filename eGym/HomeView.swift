@@ -1,3 +1,4 @@
+// HomeView.swift
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
@@ -5,6 +6,7 @@ import FirebaseFirestore
 struct HomeView: View {
   @EnvironmentObject var auth: AuthViewModel
   @StateObject private var vm = HomeVM()
+  @State private var didFinishQuestionnaire = false   // currently unused hook if you want later
 
   private var displayName: String {
     let u = auth.user
@@ -28,7 +30,7 @@ struct HomeView: View {
         .padding(.horizontal, 24)
         .padding(.top, 8)
 
-        // Today card (from HomeVM)
+        // Today card
         Group {
           if vm.loading {
             ProgressView().padding()
@@ -42,9 +44,8 @@ struct HomeView: View {
         }
         .padding(.horizontal, 24)
 
-        // 🔽 Current plan / generate plan button
+        // Current plan / generate plan
         if let plan = vm.plan {
-          // If a plan exists, let them view it
           NavigationLink {
             WeeklyPlanView(plan: plan)
           } label: {
@@ -59,7 +60,6 @@ struct HomeView: View {
           .tint(Palette.accentPrimary)
           .padding(.horizontal, 24)
         } else if let uid = auth.user?.uid {
-          // If no plan yet, let them generate one
           Button {
             Task { await vm.generatePlan(uid: uid) }
           } label: {
@@ -75,10 +75,10 @@ struct HomeView: View {
           .padding(.horizontal, 24)
           .disabled(vm.loading)
         }
-        
+
         StrengthRatingCard()
-              .padding(.horizontal, 24)
-          
+          .padding(.horizontal, 24)
+
         Spacer(minLength: 16)
 
         // Sign out
@@ -96,6 +96,17 @@ struct HomeView: View {
         .padding(.bottom, 24)
       }
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarTrailing) {
+          NavigationLink {
+            ProfileView(didFinishQuestionnaire: $didFinishQuestionnaire)
+          } label: {
+            Image(systemName: "person.crop.circle")
+              .font(.system(size: 22, weight: .semibold))
+              .foregroundColor(Palette.textPrimary)
+          }
+        }
+      }
       .onAppear {
         if let uid = auth.user?.uid { vm.load(uid: uid) }
       }
@@ -122,10 +133,9 @@ private struct TodayCard: View {
         )
         .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
         .frame(maxWidth: .infinity)
-        .frame(height: 100) // ↓ was 140; feels much tighter
+        .frame(height: 100)
         .overlay(
           HStack(spacing: 12) {
-            // left rail (day + minutes)
             VStack(alignment: .leading, spacing: 4) {
               Text("Today • \(day.day)")
                 .font(.subheadline.weight(.semibold))
@@ -143,7 +153,6 @@ private struct TodayCard: View {
                   .foregroundColor(.secondary)
                   .lineLimit(1)
               } else if let ex = day.exercises?.first {
-                // show only first exercise inline
                 Text("\(ex.name): \(ex.sets)×\(ex.reps_or_time)")
                   .font(.caption2)
                   .foregroundColor(.secondary)
@@ -154,7 +163,6 @@ private struct TodayCard: View {
 
             Spacer(minLength: 8)
 
-            // right tag (minutes)
             Text("\(day.estimated_minutes) min")
               .font(.caption.weight(.semibold))
               .padding(.horizontal, 10)
@@ -203,6 +211,7 @@ private struct EmptyCard: View {
   }
 }
 
+// StrengthRatingCard stays as you already have it.
 
 #Preview {
   HomeView()

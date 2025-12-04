@@ -58,8 +58,9 @@ final class HomeVM: ObservableObject {
 
   // MARK: - NEW: Generate a plan on demand (called from HomeView button)
 
-    // MARK: - NEW: Generate a plan on demand (called from HomeView button)
+// MARK: - NEW: Generate a plan on demand (called from HomeView button)
 
+// MARK: - Generate a plan on demand (called from HomeView button)
 @MainActor
 func generatePlan(uid: String) async {
   loading = true
@@ -71,7 +72,6 @@ func generatePlan(uid: String) async {
 
   do {
     // 1) Call the Cloud Function: generateWorkoutPlan
-    //    No data needed in the body; it uses request.auth.uid on the server.
     let result = try await functions.httpsCallable("generateWorkoutPlan").call([:])
 
     // 2) Extract workoutPlanId from the response
@@ -111,29 +111,37 @@ func generatePlan(uid: String) async {
 
     let plan = try planSnap.data(as: WorkoutPlan.self)
 
-    // 5) Compute "today" using your existing helper
+    // 5) Compute "today"
     self.plan = plan
-    self.today = self.pickToday(from: plan,
-                                userData: ["planStartWeekday": "Mon"])
+    self.today = self.pickToday(
+      from: plan,
+      userData: ["planStartWeekday": "Mon"]
+    )
 
     self.loading = false
   } catch {
-    if let err = error as NSError? {
-      print("Functions error:", err.domain, err.code, err.userInfo)
+    if let err = error as NSError?,
+       err.domain == FunctionsErrorDomain,
+       FunctionsErrorCode(rawValue: err.code) == .deadlineExceeded {
+      // Cloud Function took too long, but it may still have created a plan.
+      print("Deadline exceeded – trying to reload any active plan from Firestore.")
 
-      // Try to show server-side details (what we pass from HttpsError)
-      if let details = err.userInfo[FunctionsErrorDetailsKey] as? String {
-        self.error = details
-      } else if let desc = err.userInfo[NSLocalizedDescriptionKey] as? String {
-        self.error = desc
-      } else {
-        self.error = err.localizedDescription
-      }
-    } else {
-      print("Functions error (non-NS):", error)
-      self.error = error.localizedDescription
+      // Keep loading state while we try to recover
+      self.error = nil
+
+      // Try to pull whatever is now active on the user doc
+      self.load(uid: uid)
+      return   // IMPORTANT: don't fall through and set an error message
     }
 
+    // For real errors, surface them in the UI
+    if let err = error as NSError? {
+      print("Functions error:", err.domain, err.code, err.userInfo)
+    } else {
+      print("Functions error (non-NS):", error)
+    }
+
+    self.error = error.localizedDescription
     self.loading = false
   }
 }

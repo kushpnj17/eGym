@@ -1,5 +1,4 @@
 import FirebaseFirestore
-// QuestionnaireView.swift
 import SwiftUI
 
 // MARK: - Color Helpers & Palette
@@ -31,6 +30,8 @@ enum Palette {
 
 struct QuestionnaireView: View {
   @EnvironmentObject var auth: AuthViewModel
+  @Environment(\.dismiss) private var dismiss
+
   let onFinished: () -> Void
   init(onFinished: @escaping () -> Void = {}) { self.onFinished = onFinished }
 
@@ -41,7 +42,7 @@ struct QuestionnaireView: View {
     VStack(spacing: 0) {
       ScrollView {
         GeometryReader { geo in
-          // Centered column that is 90% of the screen width.
+          // Centered column that is ~90% of the screen width
           VStack(alignment: .leading, spacing: 12) {
             Text(step.title)
               .font(.system(size: 34, weight: .bold))
@@ -57,11 +58,11 @@ struct QuestionnaireView: View {
             stepView
               .padding(.top, 4)
           }
-          .frame(width: geo.size.width * 0.9)  // << constrained column
+          .frame(width: geo.size.width * 0.9)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.bottom, 24)
         }
-        .frame(minHeight: 0)  // let scroll view size naturally
+        .frame(minHeight: 0)
       }
 
       Divider()
@@ -90,7 +91,7 @@ struct QuestionnaireView: View {
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
-      .background(Palette.bg)  // flat footer to match theme
+      .background(Palette.bg)
     }
     .background(Palette.bg)
     .tint(Palette.accentPrimary)
@@ -139,12 +140,15 @@ struct QuestionnaireView: View {
     }
   }
 
-  // MARK: - Firestore write (same auth pattern, just more fields)
+  // MARK: - Firestore write
 
   @MainActor
   private func saveAndFinish() async {
     guard let uid = auth.user?.uid else {
-      await MainActor.run { onFinished() }
+      await MainActor.run {
+        onFinished()
+        dismiss()
+      }
       return
     }
 
@@ -161,9 +165,9 @@ struct QuestionnaireView: View {
     let payload: [String: Any] = [
       "goal": answers.goal ?? "",
       "skillLevel": answers.skillLevel ?? "",
-      "injuries": injuries.map { $0 },
+      "injuries": injuries,
       "mobilityLevel": answers.mobilityLevel ?? "",
-      "equipment": equipment.map { $0 },
+      "equipment": equipment,
       "timePerDayMinutes": answers.timePerDayMinutes,
       "updatedAt": FieldValue.serverTimestamp(),
     ]
@@ -176,7 +180,10 @@ struct QuestionnaireView: View {
       print("Failed to save questionnaire: \(error)")
     }
 
-    await MainActor.run { onFinished() }
+    await MainActor.run {
+      onFinished()   // caller decides: go to Home, refresh, etc.
+      dismiss()      // pop Questionnaire → back to presenter (Profile, etc.)
+    }
   }
 }
 
@@ -273,7 +280,8 @@ struct PillChip: View {
       )
       .shadow(
         color: isSelected ? Palette.accentPrimary.opacity(0.15) : Color.black.opacity(0.04),
-        radius: isSelected ? 8 : 6, x: 0, y: isSelected ? 4 : 3)
+        radius: isSelected ? 8 : 6, x: 0, y: isSelected ? 4 : 3
+      )
     }
     .buttonStyle(.plain)
     .contentShape(Rectangle())
