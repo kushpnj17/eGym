@@ -20,9 +20,59 @@ export const generateWorkoutPlan = onCall(
       throw new HttpsError("unauthenticated", "User must be signed in.");
     }
 
+    // timing loggers - bottleneck track
+        const start = Date.now();
+
+    type TimingMark = {
+      stage: string;
+      t: number;
+    };
+
+    const timings: TimingMark[] = [];
+
+    const mark = (stage: string) => {
+      const t = Date.now();
+      timings.push({ stage, t });
+      // Optional per-stage log:
+      logger.info("generateWorkoutPlan timingMark", {
+        uid,
+        stage,
+        elapsedMsFromStart: t - start,
+      });
+    };
+
+    const logTimingSummary = () => {
+      if (timings.length === 0) return;
+
+      const breakdown = timings.map((entry, idx) => {
+        const elapsedMsFromStart = entry.t - start;
+        const deltaMsFromPrevious =
+          idx === 0 ? 0 : entry.t - timings[idx - 1].t;
+        return {
+          stage: entry.stage,
+          elapsedMsFromStart,
+          deltaMsFromPrevious,
+        };
+      });
+
+      const totalMs = timings[timings.length - 1].t - start;
+
+      logger.info("generateWorkoutPlan timingSummary", {
+        uid,
+        totalMs,
+        breakdown,
+      });
+    };
+
+
+    mark("start");
+
+
     const db = admin.firestore();
     const userRef = db.collection("users").doc(uid);
+    mark("before_get_user");
     const userDoc = await userRef.get();
+    mark("after_get_user");
 
     if (!userDoc.exists) {
       throw new HttpsError("not-found", "User doc not found.");
@@ -241,6 +291,7 @@ ${JSON.stringify(profile, null, 2)}
 
     let raw: string;
     try {
+     mark("before_openai_call");
       const completion = await client.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0,
@@ -250,6 +301,7 @@ ${JSON.stringify(profile, null, 2)}
           { role: "user", content: userMessage },
         ],
       });
+     mark("after_openai_call");
 
       raw = completion.choices[0].message.content ?? "";
       logger.info("Raw OpenAI response (truncated)", raw.slice(0, 300));
@@ -266,7 +318,10 @@ ${JSON.stringify(profile, null, 2)}
 
     let planJson: any;
     try {
+
+      mark("before_json_parse");
       planJson = JSON.parse(cleaned);
+      mark("after_json_parse");
     } catch (err) {
       logger.error("Failed to parse AI JSON", err, cleaned.slice(0, 300));
       throw new HttpsError(
@@ -290,10 +345,12 @@ ${JSON.stringify(profile, null, 2)}
         : "Workout";
 
     // Count existing plans for this user with the same goal
+    mark("before_count_existing_plans");
     const existingSameGoalSnap = await userRef
       .collection("workoutPlans")
       .where("profile.goal", "==", goal)
       .get();
+    mark("after_count_existing_plans");
 
     const index = existingSameGoalSnap.size + 1;
     const suffix = index > 1 ? ` ${index}` : "";
@@ -309,10 +366,13 @@ ${JSON.stringify(profile, null, 2)}
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
-
+    mark("before_add_plan");
     const ref = await userRef.collection("workoutPlans").add(planDoc);
+    mark("after_add_plan");
 
     logger.info(`Created workout plan ${ref.id} for uid=${uid}`);
+    mark("end");
+    logTimingSummary();
 
     return { workoutPlanId: ref.id };
   }

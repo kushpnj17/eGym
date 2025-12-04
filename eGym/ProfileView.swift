@@ -29,8 +29,9 @@ struct ProfileView: View {
       .padding(.horizontal, 24)
       .padding(.top, 8)
 
-      // Menu: Set Preferences
+      // Menu
       VStack(spacing: 12) {
+        // Preferences
         NavigationLink {
           QuestionnaireView {
             // Called AFTER saving in QuestionnaireView.
@@ -39,22 +40,66 @@ struct ProfileView: View {
             didFinishQuestionnaire = true
           }
         } label: {
+          menuRow(
+            title: "Set Preferences",
+            subtitle: "Update your fitness goals and setup questionnaire."
+          )
+        }
+        .buttonStyle(.plain)
+
+        // --- Dummy rows (not wired up yet) ---
+
+        Button {
+          // TODO: Edit profile (name, photo, etc.)
+        } label: {
+          menuRow(
+            title: "Edit Profile",
+            subtitle: "Update your name and profile details."
+          )
+        }
+        .buttonStyle(.plain)
+
+        Button {
+          // TODO: Notification settings
+        } label: {
+          menuRow(
+            title: "Notification Settings",
+            subtitle: "Choose when and how we notify you."
+          )
+        }
+        .buttonStyle(.plain)
+
+        Button {
+          // TODO: Connected apps / integrations
+        } label: {
+          menuRow(
+            title: "Connected Apps",
+            subtitle: "Manage integrations with other services."
+          )
+        }
+        .buttonStyle(.plain)
+
+        // --- Sign Out ---
+
+        Button {
+          auth.signOut()
+        } label: {
           HStack {
             VStack(alignment: .leading, spacing: 4) {
-              Text("Set Preferences")
+              Text("Sign Out")
                 .font(.headline)
-                .foregroundColor(Palette.textPrimary)
+                .foregroundColor(.red)
 
-              Text("Update your fitness goals and setup questionnaire.")
+              Text("Log out of your eGym account.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.red.opacity(0.8))
             }
 
             Spacer()
 
-            Image(systemName: "chevron.right")
+            Image(systemName: "rectangle.portrait.and.arrow.right")
               .font(.system(size: 16, weight: .semibold))
-              .foregroundColor(.secondary)
+              .foregroundColor(.red.opacity(0.9))
           }
           .padding()
           .background(
@@ -72,6 +117,35 @@ struct ProfileView: View {
     .navigationBarTitleDisplayMode(.inline)
     .background(Palette.bg.ignoresSafeArea())
     .tint(Palette.accentPrimary)
+  }
+
+  // MARK: - Helpers
+
+  @ViewBuilder
+  private func menuRow(title: String, subtitle: String) -> some View {
+    HStack {
+      VStack(alignment: .leading, spacing: 4) {
+        Text(title)
+          .font(.headline)
+          .foregroundColor(Palette.textPrimary)
+
+        Text(subtitle)
+          .font(.subheadline)
+          .foregroundColor(.secondary)
+      }
+
+      Spacer()
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundColor(.secondary)
+    }
+    .padding()
+    .background(
+      RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .fill(Color.white.opacity(0.9))
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+    )
   }
 }
 

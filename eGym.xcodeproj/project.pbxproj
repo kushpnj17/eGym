@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5CF475412EE12AEC00604CAD /* SwiftfulLoadingIndicators in Frameworks */ = {isa = PBXBuildFile; productRef = 5CF475402EE12AEC00604CAD /* SwiftfulLoadingIndicators */; };
 		8B055ACD2EBB312700E58C1F /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8B055ACC2EBB312700E58C1F /* FirebaseAuth */; };
 		8B055ACF2EBB312700E58C1F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8B055ACE2EBB312700E58C1F /* FirebaseCore */; };
 		8B055AD12EBB312700E58C1F /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8B055AD02EBB312700E58C1F /* FirebaseFirestore */; };
@@ -78,6 +79,7 @@
 				8B055ACF2EBB312700E58C1F /* FirebaseCore in Frameworks */,
 				8B055ACD2EBB312700E58C1F /* FirebaseAuth in Frameworks */,
 				8B055ADA2EBB316000E58C1F /* GoogleSignInSwift in Frameworks */,
+				5CF475412EE12AEC00604CAD /* SwiftfulLoadingIndicators in Frameworks */,
 				8B055AD12EBB312700E58C1F /* FirebaseFirestore in Frameworks */,
 				8B055AD52EBB312700E58C1F /* FirebaseStorage in Frameworks */,
 				8B055AD32EBB312700E58C1F /* FirebaseFunctions in Frameworks */,
@@ -157,6 +159,7 @@
 				8B055AD42EBB312700E58C1F /* FirebaseStorage */,
 				8B055AD72EBB316000E58C1F /* GoogleSignIn */,
 				8B055AD92EBB316000E58C1F /* GoogleSignInSwift */,
+				5CF475402EE12AEC00604CAD /* SwiftfulLoadingIndicators */,
 			);
 			productName = eGym;
 			productReference = 5CA3A19D2EA8A5C600D8763F /* eGym.app */;
@@ -243,6 +246,7 @@
 			packageReferences = (
 				8B055ACB2EBB312700E58C1F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8B055AD62EBB316000E58C1F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				5CF4753F2EE12AEC00604CAD /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5CA3A19E2EA8A5C600D8763F /* Products */;
@@ -605,6 +609,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5CF4753F2EE12AEC00604CAD /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftfulThinking/SwiftfulLoadingIndicators.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.4;
+			};
+		};
 		8B055ACB2EBB312700E58C1F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -624,6 +636,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5CF475402EE12AEC00604CAD /* SwiftfulLoadingIndicators */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CF4753F2EE12AEC00604CAD /* XCRemoteSwiftPackageReference "SwiftfulLoadingIndicators" */;
+			productName = SwiftfulLoadingIndicators;
+		};
 		8B055ACC2EBB312700E58C1F /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8B055ACB2EBB312700E58C1F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

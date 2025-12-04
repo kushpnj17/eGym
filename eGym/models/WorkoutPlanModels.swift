@@ -31,8 +31,8 @@ struct DayPlan: Codable, Identifiable {
   var id: String { day }
   var day: String  // "Mon"..."Sun"
   var day_type: String  // "workout" | "rest"
-  var target_focus: String
-  var estimated_minutes: Int
+  var target_focus: String?
+  var estimated_minutes: Int?
   var warmup: Block?
   var exercises: [Exercise]?
   var cooldown: Block?

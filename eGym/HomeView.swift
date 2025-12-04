@@ -1,12 +1,12 @@
-// HomeView.swift
-import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
+// HomeView.swift
+import SwiftUI
 
 struct HomeView: View {
   @EnvironmentObject var auth: AuthViewModel
   @StateObject private var vm = HomeVM()
-  @State private var didFinishQuestionnaire = false   // currently unused hook if you want later
+  @State private var didFinishQuestionnaire = false  // currently unused hook if you want later
 
   private var displayName: String {
     let u = auth.user
@@ -15,85 +15,119 @@ struct HomeView: View {
 
   var body: some View {
     NavigationStack {
-      VStack(spacing: 16) {
-        // Header
-        VStack(spacing: 8) {
-          Text("Welcome back, \(displayName) 👋")
-            .font(.largeTitle).bold()
-            .foregroundColor(Palette.textPrimary)
-            .multilineTextAlignment(.center)
+      ScrollView(showsIndicators: false) {
+        VStack(spacing: 16) {
 
-          Text("What should we work on today?")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
+          // ---------- HEADER ----------
+          VStack(spacing: 4) {
+            Text("Welcome back, \(displayName) 👋")
+              .font(.largeTitle).bold()
+              .foregroundColor(Palette.textPrimary)
+              .multilineTextAlignment(.center)
 
-        // Today card
-        Group {
-          if vm.loading {
-            ProgressView().padding()
-          } else if let day = vm.today, let plan = vm.plan {
-            TodayCard(day: day, planName: plan.name)
-          } else if vm.error != nil {
-            ErrorCard(text: vm.error ?? "Something went wrong")
-          } else {
-            EmptyCard()
+            Text("What should we work on today?")
+              .font(.subheadline)
+              .foregroundColor(.secondary)
           }
-        }
-        .padding(.horizontal, 24)
+          .padding(.top, 4)
+          .padding(.horizontal, 24)
 
-        // Current plan / generate plan
-        if let plan = vm.plan {
-          NavigationLink {
-            WeeklyPlanView(plan: plan)
-          } label: {
-            HStack(spacing: 8) {
-              Image(systemName: "calendar")
-              Text("View current plan")
-                .fontWeight(.semibold)
+          // ---------- TODAY CARD / STATE ----------
+          ZStack {
+            if vm.loading {
+              LLMGeneratingView(
+                title: "Generating your weekly plan…",
+                subtitle: "This could take up to a minute."
+              )
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+
+            } else if let day = vm.today, let plan = vm.plan {
+              TodayCard(day: day, planName: plan.name)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            } else if vm.error != nil {
+              ErrorCard(text: vm.error ?? "Something went wrong")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            } else {
+              EmptyCard()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+          }
+          .frame(maxWidth: .infinity)
+          .frame(minHeight: 270)
+          .padding(.horizontal, 24)
+
+          // ---------- INLINE PLAN CONTROLS (UNIFORM BUTTONS) ----------
+          if let plan = vm.plan {
+            HStack(spacing: 12) {
+
+              // Switch plan – white pill, same height/typography
+              if !vm.allPlans.isEmpty, let uid = auth.user?.uid {
+                Menu {
+                  ForEach(vm.allPlans) { p in
+                    Button {
+                      Task {
+                        await vm.setActivePlan(p, uid: uid)
+                      }
+                    } label: {
+                      HStack {
+                        Text(p.name)
+                        if p.id == vm.plan?.id {
+                          Image(systemName: "checkmark")
+                        }
+                      }
+                    }
+                  }
+                } label: {
+                  PlanActionButton(
+                    icon: "arrow.triangle.2.circlepath",
+                    text: "Switch plan",
+                    filled: false
+                  )
+                }
+              }
+
+              // View current plan – filled accent, same style
+              NavigationLink {
+                WeeklyPlanView(plan: plan)
+              } label: {
+                PlanActionButton(
+                  icon: "calendar",
+                  text: "View current plan",
+                  filled: true
+                )
+              }
+              .buttonStyle(.plain)
             }
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, 24)
           }
-          .buttonStyle(.bordered)
-          .tint(Palette.accentPrimary)
-          .padding(.horizontal, 24)
-        } else if let uid = auth.user?.uid {
-          Button {
-            Task { await vm.generatePlan(uid: uid) }
-          } label: {
-            HStack(spacing: 8) {
-              Image(systemName: "wand.and.stars")
-              Text(vm.loading ? "Generating plan..." : "Generate my weekly plan")
-                .fontWeight(.semibold)
+
+          // ---------- GENERATE PLAN BUTTON (same component, full width) ----------
+          if let uid = auth.user?.uid {
+            Button {
+              Task { await vm.generatePlan(uid: uid) }
+            } label: {
+              PlanActionButton(
+                icon: "wand.and.stars",
+                text: vm.loading ? "Generating plan..." : "Generate my weekly plan",
+                filled: true
+              )
             }
-            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
+            .disabled(vm.loading)
+            .padding(.horizontal, 24)
           }
-          .buttonStyle(.borderedProminent)
-          .tint(Palette.accentPrimary)
-          .padding(.horizontal, 24)
-          .disabled(vm.loading)
+
+          // ---------- STRENGTH RATING ----------
+          StrengthRatingCard()
+            .padding(.horizontal, 24)
+
+          // (Sign out removed – moved to account page)
         }
-
-        StrengthRatingCard()
-          .padding(.horizontal, 24)
-
-        Spacer(minLength: 16)
-
-        // Sign out
-        Button {
-          auth.signOut()
-        } label: {
-          Text("Sign out")
-            .fontWeight(.semibold)
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(Palette.accentPrimary)
-        .foregroundColor(.white)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 24)
+        .padding(.bottom, 32)
       }
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -115,104 +149,263 @@ struct HomeView: View {
   }
 }
 
+// MARK: - Shared button style for plan actions
+
+private struct PlanActionButton: View {
+  let icon: String
+  let text: String
+  let filled: Bool
+
+  var body: some View {
+    HStack(spacing: 8) {
+      Image(systemName: icon)
+      Text(text)
+        .fontWeight(.semibold)
+    }
+    .font(.subheadline)  // <-- same text size for all three
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 12)
+    .background(
+      filled ? Palette.accentPrimary : Color.white
+    )
+    .foregroundColor(filled ? .white : Palette.accentPrimary)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .shadow(
+      color: filled
+        ? Palette.accentPrimary.opacity(0.25)
+        : Color.black.opacity(0.06),
+      radius: 4, x: 0, y: 2
+    )
+  }
+}
+
 // MARK: - Supporting Cards for Home
 
 private struct TodayCard: View {
   let day: DayPlan
   let planName: String
 
+  // Show up to the first 3 exercises
+  private var topExercises: [Exercise] {
+    Array((day.exercises ?? []).prefix(3))
+  }
+
   var body: some View {
     NavigationLink {
       SessionView(day: day, planName: planName)
     } label: {
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .fill(Color.white.opacity(0.9))
-        .overlay(
-          RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(Color.white.opacity(0.6), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-        .frame(maxWidth: .infinity)
-        .frame(height: 100)
-        .overlay(
-          HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Today • \(day.day)")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(Palette.textPrimary)
+      ZStack {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+          .fill(
+            LinearGradient(
+              colors: [
+                Palette.accentPrimary.opacity(0.22),
+                Color.white.opacity(0.95),
+              ],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
+          )
+          .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+              .stroke(Color.white.opacity(0.7), lineWidth: 0.5)
+          )
+          .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
 
-              Text(day.target_focus)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-              if day.day_type == "rest" {
-                Text(day.notes ?? "Rest day.")
-                  .font(.caption2)
-                  .foregroundColor(.secondary)
-                  .lineLimit(1)
-              } else if let ex = day.exercises?.first {
-                Text("\(ex.name): \(ex.sets)×\(ex.reps_or_time)")
-                  .font(.caption2)
-                  .foregroundColor(.secondary)
-                  .lineLimit(1)
-                  .truncationMode(.tail)
-              }
-            }
-
-            Spacer(minLength: 8)
-
-            Text("\(day.estimated_minutes) min")
-              .font(.caption.weight(.semibold))
-              .padding(.horizontal, 10)
-              .padding(.vertical, 6)
-              .background(Color.gray.opacity(0.12))
-              .clipShape(Capsule())
-              .foregroundStyle(.secondary)
-          }
-          .padding(.horizontal, 14)
-        )
+        VStack(alignment: .leading, spacing: 10) {
+          header
+          Divider().opacity(0.25)
+          content
+          Spacer()
+          footer
+        }
+        .padding(16)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
     .buttonStyle(.plain)
+  }
+
+  private var header: some View {
+    HStack(alignment: .firstTextBaseline) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Today • \(day.day)")
+          .font(.subheadline.weight(.semibold))
+          .foregroundColor(Palette.textPrimary)
+
+        Text(day.target_focus ?? "Workout session")
+          .font(.caption)
+          .foregroundColor(.secondary)
+          .lineLimit(1)
+          .truncationMode(.tail)
+      }
+
+      Spacer(minLength: 8)
+
+      Text("\(day.estimated_minutes ?? 30) min")
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.black.opacity(0.06))
+        .clipShape(Capsule())
+        .foregroundStyle(.secondary)
+    }
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    if day.day_type == "rest" {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Rest day 😌")
+          .font(.subheadline.weight(.semibold))
+          .foregroundColor(Palette.textPrimary)
+        Text(day.notes ?? "Take it easy today and recover.")
+          .font(.caption)
+          .foregroundColor(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    } else {
+      VStack(alignment: .leading, spacing: 6) {
+        if !topExercises.isEmpty {
+          Text("Today's session")
+            .font(.caption.weight(.semibold))
+            .foregroundColor(.secondary)
+
+          ForEach(topExercises.indices, id: \.self) { idx in
+            let ex = topExercises[idx]
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+              Circle()
+                .frame(width: 6, height: 6)
+                .foregroundColor(Palette.accentPrimary.opacity(0.8))
+
+              VStack(alignment: .leading, spacing: 2) {
+                Text(ex.name)
+                  .font(.subheadline.weight(.semibold))
+                  .foregroundColor(Palette.textPrimary)
+                  .lineLimit(1)
+                  .truncationMode(.tail)
+
+                Text("\(ex.sets) × \(ex.reps_or_time)")
+                  .font(.caption2)
+                  .foregroundColor(.secondary)
+              }
+
+              Spacer()
+            }
+          }
+
+          if let total = day.exercises?.count,
+             total > topExercises.count {
+            Text(
+              "+ \(total - topExercises.count) more exercise\(total - topExercises.count == 1 ? "" : "s")"
+            )
+            .font(.caption2)
+            .foregroundColor(.secondary)
+            .padding(.top, 2)
+          }
+        } else {
+          Text("No exercises found for today.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+    }
+  }
+
+  private var footer: some View {
+    HStack {
+      Text(planName)
+        .font(.caption2.weight(.semibold))
+        .foregroundColor(.secondary)
+
+      Spacer()
+
+      Image(systemName: "chevron.right")
+        .font(.caption.weight(.semibold))
+        .foregroundColor(.secondary)
+    }
+    .padding(.top, 4)
   }
 }
 
 private struct ErrorCard: View {
   let text: String
+
   var body: some View {
-    RoundedRectangle(cornerRadius: 16)
-      .fill(Color.red.opacity(0.09))
-      .overlay(
+    ZStack {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .fill(
+          LinearGradient(
+            colors: [
+              Color.red.opacity(0.10),
+              Color.white.opacity(0.97)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .stroke(Color.white.opacity(0.7), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("Something went wrong")
+          .font(.subheadline.weight(.semibold))
+          .foregroundColor(Palette.textPrimary)
+
         Text(text)
-          .font(.subheadline)
+          .font(.caption)
           .foregroundColor(.red)
-          .padding()
-      )
-      .frame(maxWidth: .infinity, minHeight: 100)
+          .fixedSize(horizontal: false, vertical: true)
+
+        Spacer()
+      }
+      .padding(16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 }
 
 private struct EmptyCard: View {
   var body: some View {
-    RoundedRectangle(cornerRadius: 16)
-      .fill(Color.white.opacity(0.72))
-      .overlay(
-        VStack(spacing: 6) {
-          Text("No active plan")
-            .font(.headline)
-            .foregroundColor(Palette.textPrimary)
-          Text("Create or activate a plan to get started")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
-      )
-      .frame(maxWidth: .infinity, minHeight: 120)
+    ZStack {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .fill(
+          LinearGradient(
+            colors: [
+              Color.white.opacity(0.96),
+              Palette.accentPrimary.opacity(0.10),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .stroke(Color.white.opacity(0.7), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+
+      VStack(alignment: .leading, spacing: 6) {
+        Text("No active plan")
+          .font(.headline)
+          .foregroundColor(Palette.textPrimary)
+
+        Text("Create or activate a plan to get started.")
+          .font(.subheadline)
+          .foregroundColor(.secondary)
+
+        Spacer()
+      }
+      .padding(16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 }
-
-// StrengthRatingCard stays as you already have it.
-
 #Preview {
   HomeView()
     .environmentObject(AuthViewModel())

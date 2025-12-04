@@ -16,16 +16,16 @@ private func ordered(_ days: [DayPlan]) -> [DayPlan] {
   }
 }
 
-final class HomeVM: ObservableObject {
+final class HomeVM2: ObservableObject {
   @Published var plan: WorkoutPlan?
   @Published var today: DayPlan?
   @Published var loading = false
   @Published var error: String?
 
-  // 🔸 NEW: all workout plans for this user (for dropdown)
+  // 🔸 NEW: keep all workout plans for this user (for the dropdown)
   @Published var allPlans: [WorkoutPlan] = []
 
-  // MARK: - Load current active plan (and all plans)
+  // MARK: - Load current active plan
 
   func load(uid: String) {
     loading = true
@@ -56,7 +56,7 @@ final class HomeVM: ObservableObject {
             self.plan = plan
             self.today = self.pickToday(from: plan, userData: data)
 
-            // 🔸 also load all plans for this user
+            // 🔸 NEW: once we know things are wired, also load *all* plans
             self.loadAllPlans(uid: uid)
           }
           self.loading = false
@@ -64,41 +64,30 @@ final class HomeVM: ObservableObject {
     }
   }
 
-  // 🔸 NEW: load every plan in users/{uid}/workoutPlans
+  // 🔸 NEW: load every plan in users/{uid}/workoutPlans (for the dropdown)
 
   private func loadAllPlans(uid: String) {
     let db = Firestore.firestore()
     db.collection("users")
       .document(uid)
       .collection("workoutPlans")
+      .order(by: "createdAt", descending: false)
       .getDocuments { snapshot, error in
         if let error = error {
-          print("❌ Failed to load all plans:", error)
+          print("Failed to load all plans:", error)
           return
         }
-        guard let docs = snapshot?.documents else {
-          print("⚠️ No workoutPlans docs found")
-          return
-        }
+        guard let docs = snapshot?.documents else { return }
 
         do {
-          let decoded = try docs.map { doc in
+          self.allPlans = try docs.map { doc in
             try doc.data(as: WorkoutPlan.self)
           }
-
-          DispatchQueue.main.async {
-            self.allPlans = decoded
-            print("✅ Loaded \(self.allPlans.count) plans for dropdown")
-            self.allPlans.forEach { p in
-              print("   • plan id=\(p.id ?? "<no id>"), name=\(p.name)")
-            }
-          }
         } catch {
-          print("❌ Decoding all plans failed:", error)
+          print("Decoding all plans failed:", error)
         }
       }
   }
-
 
   // MARK: - Generate a plan on demand (called from HomeView button)
 
@@ -163,7 +152,7 @@ final class HomeVM: ObservableObject {
         userData: ["planStartWeekday": "Mon"]
       )
 
-      // 🔸 refresh full list including this new plan
+      // 🔸 NEW: refresh the full list including this new plan
       self.loadAllPlans(uid: uid)
 
       self.loading = false
@@ -180,7 +169,7 @@ final class HomeVM: ObservableObject {
 
         // Try to pull whatever is now active on the user doc
         self.load(uid: uid)
-        return  // don't fall through and set an error message
+        return  // IMPORTANT: don't fall through and set an error message
       }
 
       // For real errors, surface them in the UI
