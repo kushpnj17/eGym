@@ -51,9 +51,11 @@ struct QuestionnaireView: View {
               .padding(.top, 8)
 
             Text(step.subtitle)
-              .font(.callout)
-              .foregroundStyle(Palette.textPrimary.opacity(0.7))
-              .padding(.bottom, 8)
+                  .font(.callout)
+                  .foregroundStyle(Palette.textPrimary.opacity(0.7))
+                  .multilineTextAlignment(.leading)
+                  .fixedSize(horizontal: false, vertical: true)
+                  .padding(.bottom, 8)
 
             stepView
               .padding(.top, 4)

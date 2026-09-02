@@ -1,187 +1,13 @@
-import FirebaseAuth
-import FirebaseFirestore
-// HomeView.swift
+//
+//  HomeCards.swift
+//  eGym
+//
+//  Created by Kush Patel on 12/5/25.
+//
+
 import SwiftUI
 
-struct HomeView: View {
-  @EnvironmentObject var auth: AuthViewModel
-  @StateObject private var vm = HomeVM()
-  @State private var didFinishQuestionnaire = false  // currently unused hook if you want later
-
-  private var displayName: String {
-    let u = auth.user
-    return u?.displayName ?? u?.email ?? "friend"
-  }
-
-  var body: some View {
-    NavigationStack {
-      ScrollView(showsIndicators: false) {
-        VStack(spacing: 16) {
-
-          // ---------- HEADER ----------
-          VStack(spacing: 4) {
-            Text("Welcome back, \(displayName) 👋")
-              .font(.largeTitle).bold()
-              .foregroundColor(Palette.textPrimary)
-              .multilineTextAlignment(.center)
-
-            Text("What should we work on today?")
-              .font(.subheadline)
-              .foregroundColor(.secondary)
-          }
-          .padding(.top, 4)
-          .padding(.horizontal, 24)
-
-          // ---------- TODAY CARD / STATE ----------
-          ZStack {
-            if vm.loading {
-              LLMGeneratingView(
-                title: "Generating your weekly plan…",
-                subtitle: "This could take up to a minute."
-              )
-              .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
-
-            } else if let day = vm.today, let plan = vm.plan {
-              TodayCard(day: day, planName: plan.name)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            } else if vm.error != nil {
-              ErrorCard(text: vm.error ?? "Something went wrong")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            } else {
-              EmptyCard()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-          }
-          .frame(maxWidth: .infinity)
-          .frame(minHeight: 270)
-          .padding(.horizontal, 24)
-
-          // ---------- INLINE PLAN CONTROLS (UNIFORM BUTTONS) ----------
-          if let plan = vm.plan {
-            HStack(spacing: 12) {
-
-              // Switch plan – white pill, same height/typography
-              if !vm.allPlans.isEmpty, let uid = auth.user?.uid {
-                Menu {
-                  ForEach(vm.allPlans) { p in
-                    Button {
-                      Task {
-                        await vm.setActivePlan(p, uid: uid)
-                      }
-                    } label: {
-                      HStack {
-                        Text(p.name)
-                        if p.id == vm.plan?.id {
-                          Image(systemName: "checkmark")
-                        }
-                      }
-                    }
-                  }
-                } label: {
-                  PlanActionButton(
-                    icon: "arrow.triangle.2.circlepath",
-                    text: "Switch plan",
-                    filled: false
-                  )
-                }
-              }
-
-              // View current plan – filled accent, same style
-              NavigationLink {
-                WeeklyPlanView(plan: plan)
-              } label: {
-                PlanActionButton(
-                  icon: "calendar",
-                  text: "View current plan",
-                  filled: true
-                )
-              }
-              .buttonStyle(.plain)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 24)
-          }
-
-          // ---------- GENERATE PLAN BUTTON (same component, full width) ----------
-          if let uid = auth.user?.uid {
-            Button {
-              Task { await vm.generatePlan(uid: uid) }
-            } label: {
-              PlanActionButton(
-                icon: "wand.and.stars",
-                text: vm.loading ? "Generating plan..." : "Generate my weekly plan",
-                filled: true
-              )
-            }
-            .buttonStyle(.plain)
-            .disabled(vm.loading)
-            .padding(.horizontal, 24)
-          }
-
-          // ---------- STRENGTH RATING ----------
-          StrengthRatingCard()
-            .padding(.horizontal, 24)
-
-          // (Sign out removed – moved to account page)
-        }
-        .padding(.bottom, 32)
-      }
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-          NavigationLink {
-            ProfileView(didFinishQuestionnaire: $didFinishQuestionnaire)
-          } label: {
-            Image(systemName: "person.crop.circle")
-              .font(.system(size: 22, weight: .semibold))
-              .foregroundColor(Palette.textPrimary)
-          }
-        }
-      }
-      .onAppear {
-        if let uid = auth.user?.uid { vm.load(uid: uid) }
-      }
-    }
-    .egymBackground()
-  }
-}
-
-// MARK: - Shared button style for plan actions
-
-private struct PlanActionButton: View {
-  let icon: String
-  let text: String
-  let filled: Bool
-
-  var body: some View {
-    HStack(spacing: 8) {
-      Image(systemName: icon)
-      Text(text)
-        .fontWeight(.semibold)
-    }
-    .font(.subheadline)  // <-- same text size for all three
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 12)
-    .background(
-      filled ? Palette.accentPrimary : Color.white
-    )
-    .foregroundColor(filled ? .white : Palette.accentPrimary)
-    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    .shadow(
-      color: filled
-        ? Palette.accentPrimary.opacity(0.25)
-        : Color.black.opacity(0.06),
-      radius: 4, x: 0, y: 2
-    )
-  }
-}
-
-// MARK: - Supporting Cards for Home
-
-private struct TodayCard: View {
+struct TodayCard: View {
   let day: DayPlan
   let planName: String
 
@@ -328,7 +154,9 @@ private struct TodayCard: View {
   }
 }
 
-private struct ErrorCard: View {
+// MARK: - Error Card
+
+struct ErrorCard: View {
   let text: String
 
   var body: some View {
@@ -369,7 +197,9 @@ private struct ErrorCard: View {
   }
 }
 
-private struct EmptyCard: View {
+// MARK: - Empty Card
+
+struct EmptyCard: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -405,8 +235,4 @@ private struct EmptyCard: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
-}
-#Preview {
-  HomeView()
-    .environmentObject(AuthViewModel())
 }

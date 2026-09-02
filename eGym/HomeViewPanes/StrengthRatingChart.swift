@@ -37,7 +37,7 @@ struct StrengthRatingCard: View {
       .overlay(
         VStack(alignment: .leading, spacing: 8) {
           HStack {
-            Text("Strength rating")
+            Text("Weight tracker")
               .font(.headline)
               .foregroundColor(Palette.textPrimary)
             Spacer()

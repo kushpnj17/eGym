@@ -1,11 +1,15 @@
-// ProfileView.swift
+//
+//  ProfileView.swift
+//  eGym
+//
+//  Created by Kush Patel on 12/5/25.
+//
+
 import SwiftUI
 import FirebaseAuth
 
 struct ProfileView: View {
   @EnvironmentObject var auth: AuthViewModel
-
-  // Still here in case you want to react in Home later (e.g., reload plan)
   @Binding var didFinishQuestionnaire: Bool
 
   private var displayName: String {
@@ -15,7 +19,6 @@ struct ProfileView: View {
 
   var body: some View {
     VStack(spacing: 24) {
-      // Header similar to Home
       VStack(spacing: 8) {
         Text("Your profile, \(displayName)")
           .font(.largeTitle).bold()
@@ -29,14 +32,9 @@ struct ProfileView: View {
       .padding(.horizontal, 24)
       .padding(.top, 8)
 
-      // Menu
       VStack(spacing: 12) {
-        // Preferences
         NavigationLink {
           QuestionnaireView {
-            // Called AFTER saving in QuestionnaireView.
-            // We no longer dismiss Profile here; QuestionnaireView pops
-            // back to Profile, and we just mark that preferences changed.
             didFinishQuestionnaire = true
           }
         } label: {
@@ -47,10 +45,8 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
 
-        // --- Dummy rows (not wired up yet) ---
-
-        Button {
-          // TODO: Edit profile (name, photo, etc.)
+        NavigationLink {
+          EditProfileView()
         } label: {
           menuRow(
             title: "Edit Profile",
@@ -59,8 +55,8 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
 
-        Button {
-          // TODO: Notification settings
+        NavigationLink {
+          NotificationSettingsView()
         } label: {
           menuRow(
             title: "Notification Settings",
@@ -69,8 +65,19 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
 
-        Button {
-          // TODO: Connected apps / integrations
+        // NEW: Customize Home Page
+        NavigationLink {
+          CustomizeHomeView()
+        } label: {
+          menuRow(
+            title: "Customize Home",
+            subtitle: "Choose which cards appear on your home screen."
+          )
+        }
+        .buttonStyle(.plain)
+
+        NavigationLink {
+          ConnectedAppsView()
         } label: {
           menuRow(
             title: "Connected Apps",
@@ -78,8 +85,6 @@ struct ProfileView: View {
           )
         }
         .buttonStyle(.plain)
-
-        // --- Sign Out ---
 
         Button {
           auth.signOut()
@@ -118,8 +123,6 @@ struct ProfileView: View {
     .background(Palette.bg.ignoresSafeArea())
     .tint(Palette.accentPrimary)
   }
-
-  // MARK: - Helpers
 
   @ViewBuilder
   private func menuRow(title: String, subtitle: String) -> some View {

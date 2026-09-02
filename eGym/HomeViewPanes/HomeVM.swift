@@ -22,50 +22,99 @@ final class HomeVM: ObservableObject {
   @Published var loading = false
   @Published var error: String?
 
-  // 🔸 NEW: all workout plans for this user (for dropdown)
+  // all workout plans for this user (for dropdown)
   @Published var allPlans: [WorkoutPlan] = []
+
+  // Track which user this VM is currently loaded for
+  @Published private(set) var loadedUid: String?
+
+  // MARK: - Auth / user change handling
+
+  @MainActor
+  func reset() {
+    plan = nil
+    today = nil
+    allPlans = []
+    error = nil
+    loading = false
+    loadedUid = nil
+  }
+
+  /// Central entry point to react to auth user changes.
+  /// - If uid == nil → signed out → clear all state.
+  /// - If uid == same as loadedUid → no-op.
+  /// - If uid changes → reset and load for new user.
+  @MainActor
+  func handleAuthChange(_ uid: String?) {
+    guard let uid = uid else {
+      reset()
+      return
+    }
+
+    if loadedUid == uid {
+      return
+    }
+
+    reset()
+    loadedUid = uid
+    load(uid: uid)
+  }
 
   // MARK: - Load current active plan (and all plans)
 
   func load(uid: String) {
+    // 🔐 Don't stomp an in-flight generatePlan
+    if loading {
+      return
+    }
+
+    // When we start a fresh load, clear old UI so we don't show another user's data
     loading = true
     error = nil
+    plan = nil
+    today = nil
+    allPlans = []
+
     let db = Firestore.firestore()
     let userRef = db.collection("users").document(uid)
 
     userRef.getDocument { snap, err in
       if let err = err {
-        self.error = err.localizedDescription
-        self.loading = false
+        DispatchQueue.main.async {
+          self.error = err.localizedDescription
+          self.loading = false
+        }
         return
       }
       guard let data = snap?.data(),
             let activeId = data["activePlanId"] as? String, !activeId.isEmpty
       else {
-        self.loading = false
+        DispatchQueue.main.async {
+          self.loading = false
+        }
         return
       }
 
       db.collection("users").document(uid)
         .collection("workoutPlans").document(activeId)
         .getDocument(as: WorkoutPlan.self) { result in
-          switch result {
-          case .failure(let e):
-            self.error = e.localizedDescription
-          case .success(let plan):
-            self.plan = plan
-            self.today = self.pickToday(from: plan, userData: data)
-
-            // 🔸 also load all plans for this user
-            self.loadAllPlans(uid: uid)
+          DispatchQueue.main.async {
+            switch result {
+            case .failure(let e):
+              self.error = e.localizedDescription
+            case .success(let plan):
+              self.plan = plan
+              self.today = self.pickToday(from: plan, userData: data)
+              // also load all plans for this user
+              self.loadAllPlans(uid: uid)
+            }
+            self.loading = false
           }
-          self.loading = false
         }
     }
   }
 
-  // 🔸 NEW: load every plan in users/{uid}/workoutPlans
-
+  // load every plan in users/{uid}/workoutPlans
   private func loadAllPlans(uid: String) {
     let db = Firestore.firestore()
     db.collection("users")
@@ -86,8 +135,26 @@ final class HomeVM: ObservableObject {
             try doc.data(as: WorkoutPlan.self)
           }
 
+          // 🔤 sort by base name, then numeric suffix (no suffix = 1)
+          let sorted = decoded.sorted { a, b in
+            let pa = self.parsedName(a.name)
+            let pb = self.parsedName(b.name)
+
+            let baseCompare = pa.base.localizedCaseInsensitiveCompare(pb.base)
+            if baseCompare == .orderedSame {
+              if pa.index != pb.index {
+                return pa.index < pb.index
+              } else {
+                // fallback to full name for stability
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+              }
+            } else {
+              return baseCompare == .orderedAscending
+            }
+          }
+
           DispatchQueue.main.async {
-            self.allPlans = decoded
+            self.allPlans = sorted
             print("✅ Loaded \(self.allPlans.count) plans for dropdown")
             self.allPlans.forEach { p in
               print("   • plan id=\(p.id ?? "<no id>"), name=\(p.name)")
@@ -99,16 +166,15 @@ final class HomeVM: ObservableObject {
       }
   }
 
-
   // MARK: - Generate a plan on demand (called from HomeView button)
 
   @MainActor
   func generatePlan(uid: String) async {
+    loadedUid = uid
     loading = true
     error = nil
 
     let functions = Functions.functions()
-
     let db = Firestore.firestore()
     let userRef = db.collection("users").document(uid)
 
@@ -163,7 +229,7 @@ final class HomeVM: ObservableObject {
         userData: ["planStartWeekday": "Mon"]
       )
 
-      // 🔸 refresh full list including this new plan
+      // refresh full list including this new plan
       self.loadAllPlans(uid: uid)
 
       self.loading = false
@@ -175,12 +241,12 @@ final class HomeVM: ObservableObject {
         // Cloud Function took too long, but it may still have created a plan.
         print("Deadline exceeded – trying to reload any active plan from Firestore.")
 
-        // Keep loading state while we try to recover
+        // keep loading while we recover
         self.error = nil
 
-        // Try to pull whatever is now active on the user doc
+        // try to pull whatever is now active on the user doc
         self.load(uid: uid)
-        return  // don't fall through and set an error message
+        return
       }
 
       // For real errors, surface them in the UI
@@ -195,8 +261,7 @@ final class HomeVM: ObservableObject {
     }
   }
 
-  // 🔸 NEW: allow switching which plan is active from the dropdown
-
+  // allow switching which plan is active from the dropdown
   @MainActor
   func setActivePlan(_ plan: WorkoutPlan, uid: String) async {
     guard let planId = plan.id else { return }
@@ -226,6 +291,35 @@ final class HomeVM: ObservableObject {
   }
 
   // MARK: - Helper
+
+  // Parse names like "Weekly Mobility Plan 3" into ("Weekly Mobility Plan", 3).
+  // If there is no trailing number, we treat it as 1.
+  private func parsedName(_ name: String) -> (base: String, index: Int) {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // Walk backwards to grab trailing digits
+    var digits = ""
+    for char in trimmed.reversed() {
+      if char.isNumber {
+        digits.insert(char, at: digits.startIndex)
+      } else if char == " " && digits.isEmpty {
+        // still skipping whitespace before digits
+        continue
+      } else {
+        break
+      }
+    }
+
+    if let num = Int(digits), !digits.isEmpty {
+      // Base is the string without the space + digits at the end
+      let endIndex = trimmed.index(trimmed.endIndex, offsetBy: -(digits.count))
+      let base = trimmed[..<endIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+      return (String(base), num)
+    } else {
+      // No trailing number -> treat as 1
+      return (trimmed, 1)
+    }
+  }
 
   private func pickToday(from plan: WorkoutPlan, userData: [String: Any]) -> DayPlan? {
     let calendar = Calendar.current
